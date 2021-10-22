@@ -1,4 +1,10 @@
-import { Keypair, Connection, TransactionInstruction } from '@solana/web3.js';
+import { pubkeyToString, StringPublicKey } from './../../common/utils/ids';
+import {
+  Keypair,
+  Connection,
+  TransactionInstruction,
+  AccountInfo,
+} from '@solana/web3.js';
 import {
   sendTransactionWithRetry,
   placeBid,
@@ -11,6 +17,9 @@ import {
   approve,
   createTokenAccount,
   TokenAccount,
+  PartialAuctionView,
+  SCHEMA,
+  TokenAccountParser,
 } from '../../common';
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 
@@ -19,13 +28,15 @@ import BN from 'bn.js';
 import { setupCancelBid } from './cancelBid';
 import { QUOTE_MINT } from '../constants';
 import { AuctionView } from '../types';
+import { deserialize, deserializeUnchecked } from 'borsh';
+import tokenAccountMock from '../../mock/bid/tokenAccountMock';
+import mintMock from '../../mock/bid/mintMock';
 
 export async function sendPlaceBid(
   connection: Connection,
   wallet: WalletSigner,
   bidderTokenAccount: string | undefined,
-  auctionView: AuctionView,
-  accountsByMint: Map<string, TokenAccount>,
+  auctionView: PartialAuctionView,
   // value entered by the user adjust to decimals of the mint
   amount: number | BN
 ) {
@@ -36,19 +47,30 @@ export async function sendPlaceBid(
     wallet,
     bidderTokenAccount,
     auctionView,
-    accountsByMint,
     amount,
     instructions,
     signers
   );
 
-  await sendTransactionWithRetry(
-    connection,
-    wallet,
-    instructions[0],
-    signers[0],
-    'single'
+  console.log('instructions: ', instructions);
+  console.log('signers: ', signers);
+
+  console.log(
+    'instructionsLength: ',
+    instructions.map((a) => a.length).reduce((a, b) => a + b, 0)
   );
+  console.log(
+    'signers: ',
+    signers.map((a) => a.length).reduce((a, b) => a + b, 0)
+  );
+
+  // await sendTransactionWithRetry(
+  //   connection,
+  //   wallet,
+  //   instructions[0],
+  //   signers[0],
+  //   'single',
+  // );
 
   return {
     amount: bid,
@@ -59,8 +81,8 @@ export async function setupPlaceBid(
   connection: Connection,
   wallet: WalletSigner,
   bidderTokenAccount: string | undefined,
-  auctionView: AuctionView,
-  accountsByMint: Map<string, TokenAccount>,
+  auctionView: PartialAuctionView,
+
   // value entered by the user adjust to decimals of the mint
   // If BN, then assume instant sale and decimals already adjusted.
   amount: number | BN,
@@ -77,12 +99,20 @@ export async function setupPlaceBid(
     AccountLayout.span
   );
 
-  const tokenAccount = bidderTokenAccount
-    ? (cache.get(bidderTokenAccount) as TokenAccount)
-    : undefined;
-  const mint = cache.get(
-    tokenAccount ? tokenAccount.info.mint : QUOTE_MINT
-  ) as ParsedAccount<MintInfo>;
+  // ~~~~~~~GET REAL DATA ~~~~~~~
+
+  // todo: get from our DB: send auctionPubKey + bidderPubKey
+  // const tokenAccount =  bidderTokenAccount
+  //   ? (cache.get(bidderTokenAccount) as TokenAccount)
+  //   : undefined;
+
+  // const mint = cache.get(
+  //   tokenAccount ? tokenAccount.info.mint : QUOTE_MINT
+  // ) as ParsedAccount<MintInfo>;
+
+  // ~~~~~ REPLACE THIS ~~~~~~
+  const tokenAccount = tokenAccountMock as any as TokenAccount;
+  const mint = mintMock as any as ParsedAccount<MintInfo>;
 
   const lamports =
     accountRentExempt +
@@ -96,18 +126,17 @@ export async function setupPlaceBid(
       instructions,
       wallet.publicKey,
       accountRentExempt,
-      toPublicKey(auctionView.auction.info.tokenMint),
+      toPublicKey(auctionView.auction.data.info.tokenMint),
       toPublicKey(auctionView.auction.pubkey),
       signers
     ).toBase58();
   } else {
-    bidderPotTokenAccount = auctionView.myBidderPot?.info.bidderPot;
-    if (!auctionView.auction.info.ended()) {
+    bidderPotTokenAccount = auctionView.myBidderPot?.data.info.bidderPot;
+    if (!auctionView.auction.data.info.ended()) {
       const cancelSigners: Keypair[][] = [];
       const cancelInstr: TransactionInstruction[][] = [];
       await setupCancelBid(
         auctionView,
-        accountsByMint,
         accountRentExempt,
         wallet,
         cancelSigners,
@@ -142,10 +171,10 @@ export async function setupPlaceBid(
     wallet.publicKey.toBase58(),
     payingSolAccount,
     bidderPotTokenAccount,
-    auctionView.auction.info.tokenMint,
+    auctionView.auction.data.info.tokenMint,
     transferAuthority.publicKey.toBase58(),
     wallet.publicKey.toBase58(),
-    auctionView.auctionManager.vault,
+    auctionView.auctionManager.data.info.vault,
     bid,
     instructions
   );

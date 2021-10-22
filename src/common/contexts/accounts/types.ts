@@ -1,6 +1,13 @@
-import { WalletAdapter } from '@solana/wallet-adapter-base';
+// import { WalletAdapter } from '@solana/wallet-adapter-base';
 import { AccountInfo, PublicKey, Transaction } from '@solana/web3.js';
-import { TokenAccount } from '../../models';
+import {
+  AuctionData,
+  BidderPot,
+  Metadata,
+  SafetyDepositBox,
+  Vault,
+} from '../../actions';
+import { AuctionManager, TokenAccount } from '../../models';
 import { StringPublicKey } from '../../utils';
 import { deserializeAccount, deserializeMint } from './deserialize';
 
@@ -18,6 +25,23 @@ export type AccountParser = (
 export interface ParsedAccount<T> extends ParsedAccountBase {
   info: T;
 }
+export interface ParsedAccountV2<T> {
+  pubkey: StringPublicKey;
+  data: {
+    type: string;
+    info: T;
+  };
+}
+
+export type PartialAuctionView = {
+  auctionManager: ParsedAccountV2<AuctionManager>;
+  vault: ParsedAccountV2<Vault>;
+  auction: ParsedAccountV2<AuctionData>;
+  safetyDepositBox?: ParsedAccountV2<SafetyDepositBox>; // to see if need
+  metadata?: ParsedAccountV2<Metadata>;
+  myBidderPot?: ParsedAccountV2<BidderPot>; // current bid for the user for the auction
+};
+
 //todo: see thins
 // export type WalletSigner = Pick<
 //   WalletAdapter,

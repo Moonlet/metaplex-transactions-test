@@ -14,20 +14,23 @@ import {
   toPublicKey,
   BidRedemptionTicket,
   PrizeTrackingTicket,
+  PartialAuctionView,
 } from '../../common';
-import { AccountLayout } from '@solana/spl-token';
+import { AccountLayout, MintInfo } from '@solana/spl-token';
 import { TransactionInstruction, Keypair, Connection } from '@solana/web3.js';
 import { claimUnusedPrizes } from './claimUnusedPrizes';
 import { setupPlaceBid } from './sendPlaceBid';
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 import { AuctionView } from '../types';
+import mintMock from '../../mock/bid/mintMock';
+import tokenAccountMock from '../../mock/bid/tokenAccountMock';
 
 export async function sendCancelBid(
   connection: Connection,
   wallet: WalletSigner,
   payingAccount: StringPublicKey,
-  auctionView: AuctionView,
-  accountsByMint: Map<string, TokenAccount>,
+  auctionView: PartialAuctionView,
+  // accountsByMint: Map<string, TokenAccount>,
   bids: ParsedAccount<BidderMetadata>[],
   bidRedemptions: Record<string, ParsedAccount<BidRedemptionTicket>>,
   prizeTrackingTickets: Record<string, ParsedAccount<PrizeTrackingTicket>>
@@ -38,15 +41,14 @@ export async function sendCancelBid(
   const instructions: Array<TransactionInstruction[]> = [];
 
   if (
-    auctionView.auction.info.ended() &&
-    auctionView.auction.info.state !== AuctionState.Ended
+    auctionView.auction.data.info.ended() &&
+    auctionView.auction.data.info.state !== AuctionState.Ended
   ) {
     await setupPlaceBid(
       connection,
       wallet,
       payingAccount,
       auctionView,
-      accountsByMint,
       0,
       instructions,
       signers
@@ -59,7 +61,6 @@ export async function sendCancelBid(
 
   await setupCancelBid(
     auctionView,
-    accountsByMint,
     accountRentExempt,
     wallet,
     signers,
@@ -68,21 +69,22 @@ export async function sendCancelBid(
 
   if (
     wallet.publicKey.equals(
-      toPublicKey(auctionView.auctionManager.authority)
+      toPublicKey(auctionView.auctionManager.data.info.authority)
     ) &&
-    auctionView.auction.info.ended()
+    auctionView.auction.data.info.ended()
   ) {
-    await claimUnusedPrizes(
-      connection,
-      wallet,
-      auctionView,
-      accountsByMint,
-      bids,
-      bidRedemptions,
-      prizeTrackingTickets,
-      signers,
-      instructions
-    );
+    // ~~~~~~~~~~TODO - UNCOMMENT THIS!!!!!! ~~~~~~
+    // await claimUnusedPrizes(
+    //   connection,
+    //   wallet,
+    //   auctionView,
+    //   accountsByMint,
+    //   bids,
+    //   bidRedemptions,
+    //   prizeTrackingTickets,
+    //   signers,
+    //   instructions
+    // );
   }
 
   instructions.length === 1
@@ -104,8 +106,7 @@ export async function sendCancelBid(
 }
 
 export async function setupCancelBid(
-  auctionView: AuctionView,
-  accountsByMint: Map<string, TokenAccount>,
+  auctionView: PartialAuctionView,
   accountRentExempt: number,
   wallet: WalletSigner,
   signers: Array<Keypair[]>,
@@ -117,8 +118,15 @@ export async function setupCancelBid(
   const cancelInstructions: TransactionInstruction[] = [];
   const cleanupInstructions: TransactionInstruction[] = [];
 
-  const tokenAccount = accountsByMint.get(auctionView.auction.info.tokenMint);
-  const mint = cache.get(auctionView.auction.info.tokenMint);
+  // ~~~~~~~GET REAL DATA ~~~~~~~
+  // const tokenAccount = accountsByMint.get(
+  //   auctionView.auction.data.info.tokenMint
+  // );
+  // const mint = cache.get(auctionView.auction.data.info.tokenMint);
+
+  // ~~~~~ REPLACE THIS ~~~~~~
+  const tokenAccount = tokenAccountMock as any as TokenAccount;
+  const mint = mintMock as any as ParsedAccount<MintInfo>;
 
   if (mint && auctionView.myBidderPot) {
     const receivingSolAccount = ensureWrappedAccount(
@@ -133,8 +141,8 @@ export async function setupCancelBid(
     await cancelBid(
       wallet.publicKey.toBase58(),
       receivingSolAccount,
-      auctionView.myBidderPot.info.bidderPot,
-      auctionView.auction.info.tokenMint,
+      auctionView.myBidderPot.data.info.bidderPot,
+      auctionView.auction.data.info.tokenMint,
       auctionView.vault.pubkey,
       cancelInstructions
     );

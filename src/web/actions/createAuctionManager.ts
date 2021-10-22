@@ -275,6 +275,9 @@ export async function createAuctionManager(
     //   instructions: populateInstr,
     //   signers: populateSigners,
     // },
+
+    //~~~~~~ todo: maybe should not delete cacheAuctionIndexer ~~~~~~
+
     // cacheAuctionIndexer: await cacheAuctionIndexer(
     //   wallet,
     //   vault,

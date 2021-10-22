@@ -6,8 +6,8 @@ import {
   PriceFloorType,
   WinnerLimit,
   WinnerLimitType,
-} from '../common';
-import { QUOTE_MINT } from '../web/constants';
+} from '../../common';
+import { QUOTE_MINT } from '../../web/constants';
 
 export default {
   winners: new WinnerLimit({

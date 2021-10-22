@@ -212,7 +212,7 @@ export async function sendRedeemBid(
     // If you didnt win, you must have a bid we can refund before we check for open editions.
     await setupCancelBid(
       auctionView,
-      accountsByMint,
+      // accountsByMint,
       accountRentExempt,
       wallet,
       signers,

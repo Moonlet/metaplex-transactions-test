@@ -1,26 +1,12 @@
-import { Connection, PublicKey, Transaction } from '@solana/web3.js';
-import {
-  ENDPOINTS,
-  ParsedAccount,
-  WhitelistedCreator,
-  WalletSigner,
-} from './common';
-import auctionSettings from './mock/auctionSettings';
-import safetyDepositDraftsDummy from './mock/safetyDepositDrafts';
-import whitelistedCreatorsByCreatorDummy from './mock/whitelistedCreatorsByCreator';
+import { ParsedAccount, WhitelistedCreator } from './common';
+import { connection, walletSinger } from './common-setup';
+import auctionSettings from './mock/auction/auctionSettings';
+import safetyDepositDraftsDummy from './mock/auction/safetyDepositDrafts';
+import whitelistedCreatorsByCreatorDummy from './mock/auction/whitelistedCreatorsByCreator';
 import {
   createAuctionManager,
   SafetyDepositDraft,
 } from './web/actions/createAuctionManager';
-
-const connection = new Connection(ENDPOINTS[0].endpoint);
-
-const walletSinger: WalletSigner = {
-  publicKey: new PublicKey('9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan'),
-  signTransaction: (transaction: Transaction) =>
-    Promise.resolve(new Transaction()), // mock
-  signAllTransactions: (transaction: Transaction[]) => Promise.resolve([]), // mock
-};
 
 export const triggerAction = async () => {
   const whitelistedCreatorsByCreator: Record<
