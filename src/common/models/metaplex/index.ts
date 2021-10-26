@@ -29,14 +29,9 @@ import {
 
 export * from './redeemBid';
 export * from './redeemFullRightsTransferBid';
-export * from './deprecatedRedeemParticipationBid';
 export * from './startAuction';
-export * from './redeemParticipationBidV3';
-export * from './redeemPrintingV2Bid';
-export * from './withdrawMasterEdition';
 export * from './deprecatedStates';
 export * from './claimBid';
-export * from './deprecatedPopulateParticipationPrintingAccount';
 export * from './emptyPaymentAccount';
 export * from './validateSafetyDepositBoxV2';
 export * from './initAuctionManagerV2';

@@ -1,58 +1,54 @@
-import {
-  Keypair,
-  Connection,
-  TransactionInstruction,
-  SystemProgram,
-} from '@solana/web3.js';
-import {
-  Metadata,
-  ParsedAccount,
-  MasterEditionV1,
-  MasterEditionV2,
-  SequenceType,
-  sendTransactions,
-  getSafetyDepositBox,
-  Edition,
-  getEdition,
-  programIds,
-  Creator,
-  getSafetyDepositBoxAddress,
-  createAssociatedTokenAccountInstruction,
-  sendTransactionWithRetry,
-  findProgramAddress,
-  IPartialCreateAuctionArgs,
-  MetadataKey,
-  StringPublicKey,
-  toPublicKey,
-  WalletSigner,
-  sendTransactionsInSingleTransaction,
-  ParticipationConfigV2,
-  WinningConfigType,
-  getAuctionKeys,
-  getWhitelistedCreator,
-  startAuction,
-  WhitelistedCreator,
-  AmountRange,
-  TupleNumericType,
-  SafetyDepositConfig,
-  StoreIndexer,
-  createTokenAccount,
-  initAuctionManagerV2,
-  validateSafetyDepositBoxV2,
-} from '../../common';
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 import { AccountLayout, Token } from '@solana/spl-token';
+import {
+  Connection,
+  Keypair,
+  SystemProgram,
+  TransactionInstruction,
+} from '@solana/web3.js';
 import BN from 'bn.js';
-import { createVault } from './createVault';
-import { closeVault } from './closeVault';
+import {
+  AmountRange,
+  createAssociatedTokenAccountInstruction,
+  createTokenAccount,
+  Creator,
+  Edition,
+  findProgramAddress,
+  getAuctionKeys,
+  getEdition,
+  getSafetyDepositBox,
+  getWhitelistedCreator,
+  initAuctionManagerV2,
+  IPartialCreateAuctionArgs,
+  MasterEditionV1,
+  MasterEditionV2,
+  Metadata,
+  ParsedAccount,
+  ParticipationConfigV2,
+  programIds,
+  SafetyDepositConfig,
+  sendTransactions,
+  sendTransactionWithRetry,
+  SequenceType,
+  startAuction,
+  StringPublicKey,
+  toPublicKey,
+  TupleNumericType,
+  validateSafetyDepositBoxV2,
+  WalletSigner,
+  WhitelistedCreator,
+  WinningConfigType,
+} from '../../common';
+import { QUOTE_MINT } from '../constants';
 import {
   addTokensToVault,
   SafetyDepositInstructionTemplate,
 } from './addTokensToVault';
-import { makeAuction } from './makeAuction';
+import { closeVault } from './closeVault';
 import { createExternalPriceAccount } from './createExternalPriceAccount';
+import { createVault } from './createVault';
+import { makeAuction } from './makeAuction';
 import { setVaultAndAuctionAuthorities } from './setVaultAndAuctionAuthorities';
-import { QUOTE_MINT } from '../constants';
 // import { cacheAuctionIndexer } from './cacheAuctionInIndexer';
 
 interface normalPattern {

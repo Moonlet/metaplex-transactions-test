@@ -5,16 +5,10 @@ import {
   AuctionViewItem,
   BidderMetadata,
   BidRedemptionTicket,
-  createAssociatedTokenAccountInstruction,
   createTokenAccount,
-  deprecatedGetReservationList,
-  findProgramAddress,
   getBidRedemption,
-  MasterEditionV1,
   ParsedAccount,
   PartialAuctionView,
-  PrizeTrackingTicket,
-  programIds,
   redeemBid,
   redeemFullRightsTransferBid,
   SafetyDepositBox,
@@ -22,7 +16,6 @@ import {
   toPublicKey,
   WalletSigner,
   WinningConfigType,
-  withdrawMasterEdition,
 } from '../../common';
 import safetyDepositAccount from '../../mock/cache/safetyDepositAccount';
 import { AuctionView } from '../types';
@@ -365,123 +358,123 @@ async function setupRedeemFullRightsTransferInstructions(
   }
 }
 
-async function setupWithdrawMasterEditionInstructions(
-  connection: Connection,
-  auctionView: AuctionView,
-  wallet: WalletSigner,
-  safetyDeposit: ParsedAccount<SafetyDepositBox>,
-  item: AuctionViewItem,
-  signers: Array<Keypair[]>,
-  instructions: Array<TransactionInstruction[]>
-) {
-  if (!wallet.publicKey) throw new Error();
+// async function setupWithdrawMasterEditionInstructions(
+//   connection: Connection,
+//   auctionView: AuctionView,
+//   wallet: WalletSigner,
+//   safetyDeposit: ParsedAccount<SafetyDepositBox>,
+//   item: AuctionViewItem,
+//   signers: Array<Keypair[]>,
+//   instructions: Array<TransactionInstruction[]>
+// ) {
+//   if (!wallet.publicKey) throw new Error();
 
-  if (!item.masterEdition || !item.metadata) {
-    return;
-  }
+//   if (!item.masterEdition || !item.metadata) {
+//     return;
+//   }
 
-  const myInstructions: TransactionInstruction[] = [];
-  const mySigners: Keypair[] = [];
-  const ata = (
-    await findProgramAddress(
-      [
-        wallet.publicKey.toBuffer(),
-        programIds().token.toBuffer(),
-        toPublicKey(item.metadata.info.mint).toBuffer(),
-      ],
-      programIds().associatedToken
-    )
-  )[0];
+//   const myInstructions: TransactionInstruction[] = [];
+//   const mySigners: Keypair[] = [];
+//   const ata = (
+//     await findProgramAddress(
+//       [
+//         wallet.publicKey.toBuffer(),
+//         programIds().token.toBuffer(),
+//         toPublicKey(item.metadata.info.mint).toBuffer(),
+//       ],
+//       programIds().associatedToken
+//     )
+//   )[0];
 
-  const existingAta = await connection.getAccountInfo(toPublicKey(ata));
-  console.log('Existing ata?', existingAta);
-  if (!existingAta) {
-    createAssociatedTokenAccountInstruction(
-      myInstructions,
-      toPublicKey(ata),
-      wallet.publicKey,
-      wallet.publicKey,
-      toPublicKey(item.metadata.info.mint)
-    );
-  }
+//   const existingAta = await connection.getAccountInfo(toPublicKey(ata));
+//   console.log('Existing ata?', existingAta);
+//   if (!existingAta) {
+//     createAssociatedTokenAccountInstruction(
+//       myInstructions,
+//       toPublicKey(ata),
+//       wallet.publicKey,
+//       wallet.publicKey,
+//       toPublicKey(item.metadata.info.mint)
+//     );
+//   }
 
-  await withdrawMasterEdition(
-    auctionView.vault.pubkey,
-    safetyDeposit.info.store,
-    ata,
-    safetyDeposit.pubkey,
-    auctionView.vault.info.fractionMint,
-    item.metadata.info.mint,
-    myInstructions
-  );
+//   await withdrawMasterEdition(
+//     auctionView.vault.pubkey,
+//     safetyDeposit.info.store,
+//     ata,
+//     safetyDeposit.pubkey,
+//     auctionView.vault.info.fractionMint,
+//     item.metadata.info.mint,
+//     myInstructions
+//   );
 
-  instructions.push(myInstructions);
-  signers.push(mySigners);
-}
+//   instructions.push(myInstructions);
+//   signers.push(mySigners);
+// }
 
-async function deprecatedSetupRedeemPrintingInstructions(
-  auctionView: AuctionView,
-  accountsByMint: Map<string, TokenAccount>,
-  accountRentExempt: number,
-  wallet: WalletSigner,
-  safetyDeposit: ParsedAccount<SafetyDepositBox>,
-  item: AuctionViewItem,
-  signers: Array<Keypair[]>,
-  instructions: Array<TransactionInstruction[]>,
-  winningConfigIndex: number
-) {
-  if (!wallet.publicKey) throw new Error();
+// async function deprecatedSetupRedeemPrintingInstructions(
+//   auctionView: AuctionView,
+//   accountsByMint: Map<string, TokenAccount>,
+//   accountRentExempt: number,
+//   wallet: WalletSigner,
+//   safetyDeposit: ParsedAccount<SafetyDepositBox>,
+//   item: AuctionViewItem,
+//   signers: Array<Keypair[]>,
+//   instructions: Array<TransactionInstruction[]>,
+//   winningConfigIndex: number
+// ) {
+//   if (!wallet.publicKey) throw new Error();
 
-  if (!item.masterEdition || !item.metadata) {
-    return;
-  }
-  const updateAuth = item.metadata.info.updateAuthority;
-  const me = item.masterEdition as ParsedAccount<MasterEditionV1>;
-  const reservationList = await deprecatedGetReservationList(
-    item.masterEdition.pubkey,
-    auctionView.auctionManager.pubkey
-  );
+//   if (!item.masterEdition || !item.metadata) {
+//     return;
+//   }
+//   const updateAuth = item.metadata.info.updateAuthority;
+//   const me = item.masterEdition as ParsedAccount<MasterEditionV1>;
+//   const reservationList = await deprecatedGetReservationList(
+//     item.masterEdition.pubkey,
+//     auctionView.auctionManager.pubkey
+//   );
 
-  const newTokenAccount = accountsByMint.get(me.info.printingMint);
-  let newTokenAccountKey = newTokenAccount?.pubkey;
+//   const newTokenAccount = accountsByMint.get(me.info.printingMint);
+//   let newTokenAccountKey = newTokenAccount?.pubkey;
 
-  if (updateAuth) {
-    const claimed = auctionView.auctionManager.isItemClaimed(
-      winningConfigIndex,
-      safetyDeposit.info.order
-    );
-    console.log('This state item is', claimed);
-    if (!claimed) {
-      const winningPrizeSigner: Keypair[] = [];
-      const winningPrizeInstructions: TransactionInstruction[] = [];
+//   if (updateAuth) {
+//     const claimed = auctionView.auctionManager.isItemClaimed(
+//       winningConfigIndex,
+//       safetyDeposit.info.order
+//     );
+//     console.log('This state item is', claimed);
+//     if (!claimed) {
+//       const winningPrizeSigner: Keypair[] = [];
+//       const winningPrizeInstructions: TransactionInstruction[] = [];
 
-      signers.push(winningPrizeSigner);
-      instructions.push(winningPrizeInstructions);
-      if (!newTokenAccountKey)
-        // TODO: switch to ATA
-        newTokenAccountKey = createTokenAccount(
-          winningPrizeInstructions,
-          wallet.publicKey,
-          accountRentExempt,
-          toPublicKey(me.info.printingMint),
-          wallet.publicKey,
-          winningPrizeSigner
-        ).toBase58();
+//       signers.push(winningPrizeSigner);
+//       instructions.push(winningPrizeInstructions);
+//       if (!newTokenAccountKey)
+//         // TODO: switch to ATA
+//         newTokenAccountKey = createTokenAccount(
+//           winningPrizeInstructions,
+//           wallet.publicKey,
+//           accountRentExempt,
+//           toPublicKey(me.info.printingMint),
+//           wallet.publicKey,
+//           winningPrizeSigner
+//         ).toBase58();
 
-      await redeemBid(
-        auctionView.auctionManager.vault,
-        safetyDeposit.info.store,
-        newTokenAccountKey,
-        safetyDeposit.pubkey,
-        auctionView.vault.info.fractionMint,
-        wallet.publicKey.toBase58(),
-        wallet.publicKey.toBase58(),
-        item.masterEdition.pubkey,
-        reservationList,
-        true,
-        winningPrizeInstructions,
-        winningConfigIndex
-      );
-    }
-  }
-}
+//       await redeemBid(
+//         auctionView.auctionManager.vault,
+//         safetyDeposit.info.store,
+//         newTokenAccountKey,
+//         safetyDeposit.pubkey,
+//         auctionView.vault.info.fractionMint,
+//         wallet.publicKey.toBase58(),
+//         wallet.publicKey.toBase58(),
+//         item.masterEdition.pubkey,
+//         reservationList,
+//         true,
+//         winningPrizeInstructions,
+//         winningConfigIndex
+//       );
+//     }
+//   }
+// }
