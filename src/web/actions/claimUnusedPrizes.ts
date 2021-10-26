@@ -1,35 +1,32 @@
-import { Keypair, Connection, TransactionInstruction } from '@solana/web3.js';
+// import { Error } from '@solana/wallet-adapter-base';
+import { AccountLayout } from '@solana/spl-token';
+import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
 import {
-  ParsedAccount,
-  TokenAccount,
-  SafetyDepositBox,
-  deprecatedGetReservationList,
-  MasterEditionV1,
-  findProgramAddress,
-  programIds,
-  createAssociatedTokenAccountInstruction,
-  MetadataKey,
+  AuctionViewItem,
   BidderMetadata,
+  BidRedemptionTicket,
+  createAssociatedTokenAccountInstruction,
+  createTokenAccount,
+  deprecatedGetReservationList,
+  findProgramAddress,
+  getBidRedemption,
+  MasterEditionV1,
+  ParsedAccount,
+  PartialAuctionView,
+  PrizeTrackingTicket,
+  programIds,
+  redeemBid,
+  redeemFullRightsTransferBid,
+  SafetyDepositBox,
+  TokenAccount,
   toPublicKey,
   WalletSigner,
   WinningConfigType,
-  redeemBid,
-  redeemFullRightsTransferBid,
   withdrawMasterEdition,
-  BidRedemptionTicket,
-  getBidRedemption,
-  PrizeTrackingTicket,
-  AuctionViewItem,
-  createTokenAccount,
 } from '../../common';
-// import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
-import { AccountLayout, MintLayout } from '@solana/spl-token';
-import {
-  eligibleForParticipationPrizeGivenWinningIndex,
-  setupRedeemParticipationInstructions,
-  setupRedeemPrintingV2Instructions,
-} from './sendRedeemBid';
+import safetyDepositAccount from '../../mock/redeem/safetyDepositAccount';
 import { AuctionView } from '../types';
+import { eligibleForParticipationPrizeGivenWinningIndex } from './sendRedeemBid';
 
 export async function findEligibleParticipationBidsForRedemption(
   auctionView: AuctionView,
@@ -73,79 +70,80 @@ export async function findEligibleParticipationBidsForRedemption(
 export async function claimUnusedPrizes(
   connection: Connection,
   wallet: WalletSigner,
-  auctionView: AuctionView,
-  accountsByMint: Map<string, TokenAccount>,
-  bids: ParsedAccount<BidderMetadata>[],
-  bidRedemptions: Record<string, ParsedAccount<BidRedemptionTicket>>,
-  prizeTrackingTickets: Record<string, ParsedAccount<PrizeTrackingTicket>>,
+  auctionView: PartialAuctionView,
+  // accountsByMint: Map<string, TokenAccount>,
+  // bids: ParsedAccount<BidderMetadata>[],
+  // bidRedemptions: Record<string, ParsedAccount<BidRedemptionTicket>>,
+  // prizeTrackingTickets: Record<string, ParsedAccount<PrizeTrackingTicket>>,
   signers: Array<Keypair[]>,
   instructions: Array<TransactionInstruction[]>
 ) {
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
     AccountLayout.span
   );
-  const mintRentExempt = await connection.getMinimumBalanceForRentExemption(
-    MintLayout.span
-  );
+  // const mintRentExempt = await connection.getMinimumBalanceForRentExemption(
+  //   MintLayout.span,
+  // );
 
-  if (
-    auctionView.participationItem &&
-    auctionView.participationItem.safetyDeposit &&
-    auctionView.participationItem.masterEdition?.info.key ==
-      MetadataKey.MasterEditionV2
-  ) {
-    const balance = await connection.getTokenAccountBalance(
-      toPublicKey(auctionView.participationItem.safetyDeposit.info.store)
-    );
-    if (balance.value.uiAmount || 0 > 0) {
-      // before we can redeem, check if we need to print other people's stuff.
+  // participationItem is undefined
+  // if (
+  //   auctionView.participationItem &&
+  //   auctionView.participationItem.safetyDeposit &&
+  //   auctionView.participationItem.masterEdition?.info.key ==
+  //     MetadataKey.MasterEditionV2
+  // ) {
+  //   const balance = await connection.getTokenAccountBalance(
+  //     toPublicKey(auctionView.participationItem.safetyDeposit.info.store),
+  //   );
+  //   if (balance.value.uiAmount || 0 > 0) {
+  //     // before we can redeem, check if we need to print other people's stuff.
 
-      const unredeemedParticipations =
-        await findEligibleParticipationBidsForRedemption(
-          auctionView,
-          bids,
-          bidRedemptions
-        );
+  //     const unredeemedParticipations =
+  //       await findEligibleParticipationBidsForRedemption(
+  //         auctionView,
+  //         bids,
+  //         bidRedemptions,
+  //       );
 
-      await Promise.all(
-        unredeemedParticipations.map(
-          (p) =>
-            auctionView.participationItem &&
-            setupRedeemParticipationInstructions(
-              connection,
-              auctionView,
-              accountsByMint,
-              accountRentExempt,
-              mintRentExempt,
-              wallet,
-              p.bid.info.bidderPubkey,
-              auctionView.participationItem.safetyDeposit,
-              p.bidRedemption,
-              p.bid,
-              auctionView.participationItem,
-              signers,
-              instructions
-            )
-        )
-      );
+  //     await Promise.all(
+  //       unredeemedParticipations.map(
+  //         p =>
+  //           auctionView.participationItem &&
+  //           setupRedeemParticipationInstructions(
+  //             connection,
+  //             auctionView,
+  //             accountsByMint,
+  //             accountRentExempt,
+  //             mintRentExempt,
+  //             wallet,
+  //             p.bid.info.bidderPubkey,
+  //             auctionView.participationItem.safetyDeposit,
+  //             p.bidRedemption,
+  //             p.bid,
+  //             auctionView.participationItem,
+  //             signers,
+  //             instructions,
+  //           ),
+  //       ),
+  //     );
 
-      await setupWithdrawMasterEditionInstructions(
-        connection,
-        auctionView,
-        wallet,
-        auctionView.participationItem.safetyDeposit,
-        auctionView.participationItem,
-        signers,
-        instructions
-      );
-    }
-  }
+  //     await setupWithdrawMasterEditionInstructions(
+  //       connection,
+  //       auctionView,
+  //       wallet,
+  //       auctionView.participationItem.safetyDeposit,
+  //       auctionView.participationItem,
+  //       signers,
+  //       instructions,
+  //     );
+  //   }
+  // }
 
-  const printingV2ByMint: Record<string, AuctionViewItem> = {};
+  // const printingV2ByMint: Record<string, AuctionViewItem> = {};
 
   for (
     let winnerIndex = 0;
-    winnerIndex < auctionView.auctionManager.numWinners.toNumber();
+    winnerIndex < auctionView.auctionManager.data.info.numWinners.toNumber();
     winnerIndex++
   ) {
     const winningSet = auctionView.items[winnerIndex];
@@ -163,61 +161,61 @@ export async function claimUnusedPrizes(
         continue;
       }
       if (
-        winnerIndex < auctionView.auction.info.bidState.bids.length &&
+        winnerIndex < auctionView.auction.data.info.bidState.bids.length &&
         item.winningConfigType != WinningConfigType.PrintingV2
       ) {
         continue;
       }
 
       switch (item.winningConfigType) {
-        case WinningConfigType.PrintingV1:
-          console.log(
-            'Redeeming printing v1 same way we redeem a normal bid because we arent printing it'
-          );
-          await deprecatedSetupRedeemPrintingInstructions(
-            auctionView,
-            accountsByMint,
-            accountRentExempt,
-            wallet,
-            safetyDeposit,
-            item,
-            signers,
-            instructions,
-            winnerIndex
-          );
-          break;
-        case WinningConfigType.PrintingV2: {
-          const winningBidder =
-            auctionView.auction.info.bidState.getWinnerAt(winnerIndex);
-          if (winningBidder) {
-            const bidderMetadata = bids.find(
-              (b) => b.info.bidderPubkey === winningBidder
-            );
-            if (bidderMetadata) {
-              console.log('Redeeming v2 for bid by wallet', winningBidder);
-              await setupRedeemPrintingV2Instructions(
-                connection,
-                auctionView,
-                mintRentExempt,
-                wallet,
-                winningBidder,
-                item.safetyDeposit,
-                item,
-                signers,
-                instructions,
-                winnerIndex,
-                prizeTrackingTickets
-              );
-            }
-          }
-          printingV2ByMint[item.metadata.info.mint] = item;
-          break;
-        }
+        // case WinningConfigType.PrintingV1:
+        //   console.log(
+        //     'Redeeming printing v1 same way we redeem a normal bid because we arent printing it',
+        //   );
+        //   await deprecatedSetupRedeemPrintingInstructions(
+        //     auctionView,
+        //     accountsByMint,
+        //     accountRentExempt,
+        //     wallet,
+        //     safetyDeposit,
+        //     item,
+        //     signers,
+        //     instructions,
+        //     winnerIndex,
+        //   );
+        //   break;
+        // case WinningConfigType.PrintingV2: {
+        //   const winningBidder =
+        //     auctionView.auction.info.bidState.getWinnerAt(winnerIndex);
+        //   if (winningBidder) {
+        //     const bidderMetadata = bids.find(
+        //       b => b.info.bidderPubkey === winningBidder,
+        //     );
+        //     if (bidderMetadata) {
+        //       console.log('Redeeming v2 for bid by wallet', winningBidder);
+        //       await setupRedeemPrintingV2Instructions(
+        //         connection,
+        //         auctionView,
+        //         mintRentExempt,
+        //         wallet,
+        //         winningBidder,
+        //         item.safetyDeposit,
+        //         item,
+        //         signers,
+        //         instructions,
+        //         winnerIndex,
+        //         prizeTrackingTickets,
+        //       );
+        //     }
+        //   }
+        //   printingV2ByMint[item.metadata.info.mint] = item;
+        //   break;
+        // }
         case WinningConfigType.FullRightsTransfer:
           console.log('Redeeming Full Rights');
           await setupRedeemFullRightsTransferInstructions(
             auctionView,
-            accountsByMint,
+            // accountsByMint,
             accountRentExempt,
             wallet,
             safetyDeposit,
@@ -227,36 +225,36 @@ export async function claimUnusedPrizes(
             winnerIndex
           );
           break;
-        case WinningConfigType.TokenOnlyTransfer:
-          console.log('Redeeming Token only');
-          await setupRedeemInstructions(
-            auctionView,
-            accountsByMint,
-            accountRentExempt,
-            wallet,
-            safetyDeposit,
-            signers,
-            instructions,
-            winnerIndex
-          );
-          break;
+        // case WinningConfigType.TokenOnlyTransfer:
+        //   console.log('Redeeming Token only');
+        //   await setupRedeemInstructions(
+        //     auctionView,
+        //     accountsByMint,
+        //     accountRentExempt,
+        //     wallet,
+        //     safetyDeposit,
+        //     signers,
+        //     instructions,
+        //     winnerIndex,
+        //   );
+        //   break;
       }
     }
   }
 
-  const allV2s = Object.values(printingV2ByMint);
-  for (let i = 0; i < allV2s.length; i++) {
-    const item = allV2s[i];
-    await setupWithdrawMasterEditionInstructions(
-      connection,
-      auctionView,
-      wallet,
-      item.safetyDeposit,
-      item,
-      signers,
-      instructions
-    );
-  }
+  // const allV2s = Object.values(printingV2ByMint);
+  // for (let i = 0; i < allV2s.length; i++) {
+  //   const item = allV2s[i];
+  //   await setupWithdrawMasterEditionInstructions(
+  //     connection,
+  //     auctionView,
+  //     wallet,
+  //     item.safetyDeposit,
+  //     item,
+  //     signers,
+  //     instructions,
+  //   );
+  // }
 }
 
 async function setupRedeemInstructions(
@@ -313,8 +311,8 @@ async function setupRedeemInstructions(
 }
 
 async function setupRedeemFullRightsTransferInstructions(
-  auctionView: AuctionView,
-  accountsByMint: Map<string, TokenAccount>,
+  auctionView: PartialAuctionView,
+  // accountsByMint: Map<string, TokenAccount>,
   accountRentExempt: number,
   wallet: WalletSigner,
   safetyDeposit: ParsedAccount<SafetyDepositBox>,
@@ -327,16 +325,20 @@ async function setupRedeemFullRightsTransferInstructions(
 
   const winningPrizeSigner: Keypair[] = [];
   const winningPrizeInstructions: TransactionInstruction[] = [];
-  const claimed = auctionView.auctionManager.isItemClaimed(
+  const claimed = auctionView.auctionManager.data.info.isItemClaimed(
     winningConfigIndex,
     safetyDeposit.info.order
   );
   signers.push(winningPrizeSigner);
   instructions.push(winningPrizeInstructions);
   if (!claimed) {
-    let newTokenAccount = accountsByMint.get(
-      safetyDeposit.info.tokenMint
-    )?.pubkey;
+    // ~~~~~~~GET REAL DATA ~~~~~~~
+    // let newTokenAccount = accountsByMint.get(
+    //   safetyDeposit.info.tokenMint
+    // )?.pubkey;
+    //
+    // ~~~~~ REPLACE THIS ~~~~~~
+    let newTokenAccount = safetyDepositAccount.pubkey;
     if (!newTokenAccount)
       newTokenAccount = createTokenAccount(
         winningPrizeInstructions,
@@ -348,11 +350,11 @@ async function setupRedeemFullRightsTransferInstructions(
       ).toBase58();
 
     await redeemFullRightsTransferBid(
-      auctionView.auctionManager.vault,
+      auctionView.auctionManager.data.info.vault,
       safetyDeposit.info.store,
       newTokenAccount,
       safetyDeposit.pubkey,
-      auctionView.vault.info.fractionMint,
+      auctionView.vault.data.info.fractionMint,
       wallet.publicKey.toBase58(),
       wallet.publicKey.toBase58(),
       winningPrizeInstructions,

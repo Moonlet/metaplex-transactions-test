@@ -29,11 +29,11 @@ export async function sendCancelBid(
   connection: Connection,
   wallet: WalletSigner,
   payingAccount: StringPublicKey,
-  auctionView: PartialAuctionView,
+  auctionView: PartialAuctionView
   // accountsByMint: Map<string, TokenAccount>,
-  bids: ParsedAccount<BidderMetadata>[],
-  bidRedemptions: Record<string, ParsedAccount<BidRedemptionTicket>>,
-  prizeTrackingTickets: Record<string, ParsedAccount<PrizeTrackingTicket>>
+  // bids: ParsedAccount<BidderMetadata>[],
+  // bidRedemptions: Record<string, ParsedAccount<BidRedemptionTicket>>,
+  // prizeTrackingTickets: Record<string, ParsedAccount<PrizeTrackingTicket>>
 ) {
   if (!wallet.publicKey) throw new Error();
 
@@ -74,17 +74,17 @@ export async function sendCancelBid(
     auctionView.auction.data.info.ended()
   ) {
     // ~~~~~~~~~~TODO - UNCOMMENT THIS!!!!!! ~~~~~~
-    // await claimUnusedPrizes(
-    //   connection,
-    //   wallet,
-    //   auctionView,
-    //   accountsByMint,
-    //   bids,
-    //   bidRedemptions,
-    //   prizeTrackingTickets,
-    //   signers,
-    //   instructions
-    // );
+    await claimUnusedPrizes(
+      connection,
+      wallet,
+      auctionView,
+      // accountsByMint,
+      // bids,
+      // bidRedemptions,
+      // prizeTrackingTickets,
+      signers,
+      instructions
+    );
   }
 
   instructions.length === 1

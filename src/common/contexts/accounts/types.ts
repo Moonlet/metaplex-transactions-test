@@ -2,18 +2,19 @@
 import { AccountInfo, PublicKey, Transaction } from '@solana/web3.js';
 import {
   AuctionData,
+  BidderMetadata,
   BidderPot,
   Metadata,
   SafetyDepositBox,
   Vault,
 } from '../../actions';
-import { AuctionManager, TokenAccount } from '../../models';
+import { AuctionManager, AuctionViewItem, TokenAccount } from '../../models';
 import { StringPublicKey } from '../../utils';
 import { deserializeAccount, deserializeMint } from './deserialize';
 
 export interface ParsedAccountBase {
   pubkey: StringPublicKey;
-  account: AccountInfo<Buffer>;
+  account?: AccountInfo<Buffer>;
   info: any; // TODO: change to unknown
 }
 
@@ -40,6 +41,9 @@ export type PartialAuctionView = {
   safetyDepositBox?: ParsedAccountV2<SafetyDepositBox>; // to see if need
   metadata?: ParsedAccountV2<Metadata>;
   myBidderPot?: ParsedAccountV2<BidderPot>; // current bid for the user for the auction
+  // todo: I think need auctionDataExtended also
+  items: AuctionViewItem[][]; // must add (I think we will have onle one item everytime)
+  myBidderMetadata?: ParsedAccountV2<BidderMetadata>;
 };
 
 //todo: see thins

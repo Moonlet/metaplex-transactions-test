@@ -1,5 +1,5 @@
 import BN from 'bn.js';
-import { AmountRange } from '../common';
+import { AmountRange } from '../../common';
 export default [
   {
     holding: '8c1Zb9C5JzvW3nRdtDzhvWgZ1VNsmeWpGTh51QwvMa89',

@@ -1,63 +1,64 @@
-import { Keypair, Connection, TransactionInstruction } from '@solana/web3.js';
+import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
 import {
+  AuctionState,
+  BidderPot,
+  claimBid,
+  createAssociatedTokenAccountInstruction,
+  emptyPaymentAccount,
+  findProgramAddress,
   ParsedAccount,
-  SequenceType,
+  PartialAuctionView,
+  programIds,
   sendTransactions,
   sendTransactionWithRetry,
-  BidderPot,
-  createAssociatedTokenAccountInstruction,
-  programIds,
-  findProgramAddress,
-  AuctionState,
-  TokenAccount,
+  SequenceType,
   toPublicKey,
   WalletSigner,
-  claimBid,
-  emptyPaymentAccount,
 } from '../../common';
-
 import { QUOTE_MINT } from '../constants';
 import { setupPlaceBid } from './sendPlaceBid';
-// import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
-import { AuctionView } from '../types';
 
 const BATCH_SIZE = 10;
 const SETTLE_TRANSACTION_SIZE = 6;
 const CLAIM_TRANSACTION_SIZE = 6;
+
+// this is called by the auctioneer
 export async function settle(
   connection: Connection,
   wallet: WalletSigner,
-  auctionView: AuctionView,
-  bidsToClaim: ParsedAccount<BidderPot>[],
-  payingAccount: string | undefined,
-  accountsByMint: Map<string, TokenAccount>
+  auctionView: PartialAuctionView,
+  bidsToClaim: ParsedAccount<BidderPot>[], // only one winner every time
+  payingAccount: string | undefined
 ) {
+  const signers: Array<Keypair[]> = [];
+  const instructions: Array<TransactionInstruction[]> = [];
   if (
-    auctionView.auction.info.ended() &&
-    auctionView.auction.info.state !== AuctionState.Ended
+    auctionView.auction.data.info.ended() &&
+    auctionView.auction.data.info.state !== AuctionState.Ended
   ) {
-    const signers: Keypair[][] = [];
-    const instructions: TransactionInstruction[][] = [];
-
     await setupPlaceBid(
       connection,
       wallet,
       payingAccount,
       auctionView,
-      accountsByMint,
       0,
       instructions,
       signers
     );
-
-    await sendTransactionWithRetry(
-      connection,
-      wallet,
-      instructions[0],
-      signers[0]
-    );
   }
 
+  console.log('[general] Instruction: ', instructions);
+  console.log('[general] Signers: ', signers);
+  console.log('~~~~~~~');
+
+  // await sendTransactionWithRetry(
+  //   connection,
+  //   wallet,
+  //   instructions[0],
+  //   signers[0],
+  // );
+
+  // bidsToClaim = winner bid (only one)
   await claimAllBids(connection, wallet, auctionView, bidsToClaim);
   await emptyPaymentAccountForAllTokens(connection, wallet, auctionView);
 }
@@ -65,7 +66,7 @@ export async function settle(
 async function emptyPaymentAccountForAllTokens(
   connection: Connection,
   wallet: WalletSigner,
-  auctionView: AuctionView
+  auctionView: PartialAuctionView
 ) {
   if (!wallet.publicKey) throw new Error();
 
@@ -85,7 +86,7 @@ async function emptyPaymentAccountForAllTokens(
   // That's what this loop is building.
   const prizeArrays = [
     ...auctionView.items,
-    ...(auctionView.participationItem ? [[auctionView.participationItem]] : []),
+    // ...(auctionView.participationItem ? [[auctionView.participationItem]] : []), // dont have participationItem
   ];
   for (let i = 0; i < prizeArrays.length; i++) {
     const items = prizeArrays[i];
@@ -95,11 +96,11 @@ async function emptyPaymentAccountForAllTokens(
       const creators = item.metadata.info.data.creators;
       const edgeCaseWhereCreatorIsAuctioneer = !!creators
         ?.map((c) => c.address)
-        .find((c) => c === auctionView.auctionManager.authority);
+        .find((c) => c === auctionView.auctionManager.data.info.authority);
 
       const addresses = [
         ...(creators ? creators.map((c) => c.address) : []),
-        ...[auctionView.auctionManager.authority],
+        ...[auctionView.auctionManager.data.info.authority],
       ];
 
       for (let k = 0; k < addresses.length; k++) {
@@ -132,7 +133,7 @@ async function emptyPaymentAccountForAllTokens(
           : null;
 
         await emptyPaymentAccount(
-          auctionView.auctionManager.acceptPayment,
+          auctionView.auctionManager.data.info.acceptPayment,
           ata,
           auctionView.auctionManager.pubkey,
           item.metadata.pubkey,
@@ -142,8 +143,8 @@ async function emptyPaymentAccountForAllTokens(
           auctionView.auction.pubkey,
           wallet.publicKey.toBase58(),
           addresses[k],
-          item === auctionView.participationItem ? null : i,
-          item === auctionView.participationItem ? null : j,
+          /*item === auctionView.participationItem ? null :*/ i,
+          /*item === auctionView.participationItem ? null : */ j,
           creatorIndex === -1 ||
             creatorIndex === null ||
             (edgeCaseWhereCreatorIsAuctioneer && k === addresses.length - 1)
@@ -182,6 +183,10 @@ async function emptyPaymentAccountForAllTokens(
     signers.push(currSignerBatch);
     instructions.push(currInstrBatch);
   }
+  console.log('[emptyPayment] Instructions', instructions);
+  console.log('[emptyPayment] Signers', signers);
+  console.log('~~~~~~~');
+  return;
 
   for (let i = 0; i < instructions.length; i++) {
     const instructionBatch = instructions[i];
@@ -210,7 +215,7 @@ async function emptyPaymentAccountForAllTokens(
 async function claimAllBids(
   connection: Connection,
   wallet: WalletSigner,
-  auctionView: AuctionView,
+  auctionView: PartialAuctionView,
   bids: ParsedAccount<BidderPot>[]
 ) {
   const signers: Array<Array<Keypair[]>> = [];
@@ -230,11 +235,11 @@ async function claimAllBids(
     const bid = bids[i];
     console.log('Claiming', bid.info.bidderAct);
     await claimBid(
-      auctionView.auctionManager.acceptPayment,
+      auctionView.auctionManager.data.info.acceptPayment,
       bid.info.bidderAct,
       bid.info.bidderPot,
       auctionView.vault.pubkey,
-      auctionView.auction.info.tokenMint,
+      auctionView.auction.data.info.tokenMint,
       claimBidInstructions
     );
 
@@ -266,7 +271,10 @@ async function claimAllBids(
     signers.push(currSignerBatch);
     instructions.push(currInstrBatch);
   }
-  console.log('Instructions', instructions);
+  console.log('[claimAllBids] Instructions', instructions);
+  console.log('[claimAllBids] Signers', signers);
+  console.log('~~~~~~~');
+  return;
   for (let i = 0; i < instructions.length; i++) {
     const instructionBatch = instructions[i];
     const signerBatch = signers[i];
