@@ -1,29 +1,23 @@
-import {
-  TokenAccount,
-  cancelBid,
-  cache,
-  ensureWrappedAccount,
-  sendTransactionWithRetry,
-  AuctionState,
-  SequenceType,
-  sendTransactions,
-  ParsedAccount,
-  BidderMetadata,
-  StringPublicKey,
-  WalletSigner,
-  toPublicKey,
-  BidRedemptionTicket,
-  PrizeTrackingTicket,
-  PartialAuctionView,
-} from '../../common';
 import { AccountLayout, MintInfo } from '@solana/spl-token';
-import { TransactionInstruction, Keypair, Connection } from '@solana/web3.js';
-import { claimUnusedPrizes } from './claimUnusedPrizes';
-import { setupPlaceBid } from './sendPlaceBid';
-// import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
-import { AuctionView } from '../types';
+import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
+import {
+  AuctionState,
+  cancelBid,
+  ensureWrappedAccount,
+  ParsedAccount,
+  PartialAuctionView,
+  sendTransactions,
+  sendTransactionWithRetry,
+  SequenceType,
+  StringPublicKey,
+  TokenAccount,
+  toPublicKey,
+  WalletSigner,
+} from '../../common';
 import mintMock from '../../mock/cache/mintMock';
 import tokenAccountMock from '../../mock/cache/tokenAccountMock';
+import { claimUnusedPrizes } from './claimUnusedPrizes';
+import { setupPlaceBid } from './sendPlaceBid';
 
 export async function sendCancelBid(
   connection: Connection,

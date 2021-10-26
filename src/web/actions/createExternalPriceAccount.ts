@@ -14,10 +14,10 @@ import {
   updateExternalPriceAccount,
   ExternalPriceAccount,
   MAX_EXTERNAL_ACCOUNT_SIZE,
+  QUOTE_MINT,
 } from '../../common';
 
 import BN from 'bn.js';
-import { QUOTE_MINT } from '../constants';
 
 // This command creates the external pricing oracle
 export async function createExternalPriceAccount(

@@ -38,8 +38,8 @@ import {
   WalletSigner,
   WhitelistedCreator,
   WinningConfigType,
+  QUOTE_MINT,
 } from '../../common';
-import { QUOTE_MINT } from '../constants';
 import {
   addTokensToVault,
   SafetyDepositInstructionTemplate,

@@ -14,8 +14,8 @@ import {
   SequenceType,
   toPublicKey,
   WalletSigner,
+  QUOTE_MINT,
 } from '../../common';
-import { QUOTE_MINT } from '../constants';
 import { setupPlaceBid } from './sendPlaceBid';
 
 const BATCH_SIZE = 10;

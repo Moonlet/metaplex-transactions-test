@@ -16,7 +16,7 @@ import {
   TransactionSignature,
 } from '@solana/web3.js';
 import { sleep } from '../utils/utils';
-import { WalletSigner } from './accounts';
+import { WalletSigner } from './types';
 
 interface BlockhashAndFeeCalculator {
   blockhash: Blockhash;

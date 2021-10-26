@@ -4,13 +4,11 @@ import {
   AuctionData,
   BidderMetadata,
   BidderPot,
-  Metadata,
   SafetyDepositBox,
   Vault,
-} from '../../actions';
-import { AuctionManager, AuctionViewItem, TokenAccount } from '../../models';
-import { StringPublicKey } from '../../utils';
-import { deserializeAccount, deserializeMint } from './deserialize';
+} from '../actions';
+import { AuctionManager, AuctionViewItem } from '../models';
+import { StringPublicKey } from '../utils';
 
 export interface ParsedAccountBase {
   pubkey: StringPublicKey;
@@ -57,28 +55,28 @@ export type WalletSigner = {
   signAllTransactions: (transaction: Transaction[]) => Promise<Transaction[]>;
 };
 
-export const TokenAccountParser = (
-  pubKey: StringPublicKey,
-  info: AccountInfo<Buffer>
-) => {
-  // Sometimes a wrapped sol account gets closed, goes to 0 length,
-  // triggers an update over wss which triggers this guy to get called
-  // since your UI already logged that pubkey as a token account. Check for length.
-  if (info.data.length > 0) {
-    const buffer = Buffer.from(info.data);
-    const data = deserializeAccount(buffer);
+// export const TokenAccountParser = (
+//   pubKey: StringPublicKey,
+//   info: AccountInfo<Buffer>
+// ) => {
+//   // Sometimes a wrapped sol account gets closed, goes to 0 length,
+//   // triggers an update over wss which triggers this guy to get called
+//   // since your UI already logged that pubkey as a token account. Check for length.
+//   if (info.data.length > 0) {
+//     const buffer = Buffer.from(info.data);
+//     const data = deserializeAccount(buffer);
 
-    const details = {
-      pubkey: pubKey,
-      account: {
-        ...info,
-      },
-      info: data,
-    } as TokenAccount;
+//     const details = {
+//       pubkey: pubKey,
+//       account: {
+//         ...info,
+//       },
+//       info: data,
+//     } as TokenAccount;
 
-    return details;
-  }
-};
+//     return details;
+//   }
+// };
 
 export const GenericAccountParser = (
   pubKey: StringPublicKey,
@@ -97,21 +95,21 @@ export const GenericAccountParser = (
   return details;
 };
 
-export const MintParser = (
-  pubKey: StringPublicKey,
-  info: AccountInfo<Buffer>
-) => {
-  const buffer = Buffer.from(info.data);
+// export const MintParser = (
+//   pubKey: StringPublicKey,
+//   info: AccountInfo<Buffer>
+// ) => {
+//   const buffer = Buffer.from(info.data);
 
-  const data = deserializeMint(buffer);
+//   const data = deserializeMint(buffer);
 
-  const details = {
-    pubkey: pubKey,
-    account: {
-      ...info,
-    },
-    info: data,
-  } as ParsedAccountBase;
+//   const details = {
+//     pubkey: pubKey,
+//     account: {
+//       ...info,
+//     },
+//     info: data,
+//   } as ParsedAccountBase;
 
-  return details;
-};
+//   return details;
+// };
