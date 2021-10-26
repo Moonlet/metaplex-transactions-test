@@ -45,18 +45,17 @@ export async function settle(
       instructions,
       signers
     );
+
+    console.log('[general] Instruction: ', instructions);
+    console.log('[general] Signers: ', signers);
+    console.log('~~~~~~~');
+    // await sendTransactionWithRetry(
+    //   connection,
+    //   wallet,
+    //   instructions[0],
+    //   signers[0],
+    // );
   }
-
-  console.log('[general] Instruction: ', instructions);
-  console.log('[general] Signers: ', signers);
-  console.log('~~~~~~~');
-
-  // await sendTransactionWithRetry(
-  //   connection,
-  //   wallet,
-  //   instructions[0],
-  //   signers[0],
-  // );
 
   // bidsToClaim = winner bid (only one)
   await claimAllBids(connection, wallet, auctionView, bidsToClaim);
