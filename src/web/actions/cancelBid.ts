@@ -22,8 +22,8 @@ import { claimUnusedPrizes } from './claimUnusedPrizes';
 import { setupPlaceBid } from './sendPlaceBid';
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 import { AuctionView } from '../types';
-import mintMock from '../../mock/bid/mintMock';
-import tokenAccountMock from '../../mock/bid/tokenAccountMock';
+import mintMock from '../../mock/cache/mintMock';
+import tokenAccountMock from '../../mock/cache/tokenAccountMock';
 
 export async function sendCancelBid(
   connection: Connection,

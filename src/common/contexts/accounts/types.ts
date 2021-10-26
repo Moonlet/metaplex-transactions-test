@@ -39,7 +39,6 @@ export type PartialAuctionView = {
   vault: ParsedAccountV2<Vault>;
   auction: ParsedAccountV2<AuctionData>;
   safetyDepositBox?: ParsedAccountV2<SafetyDepositBox>; // to see if need
-  metadata?: ParsedAccountV2<Metadata>;
   myBidderPot?: ParsedAccountV2<BidderPot>; // current bid for the user for the auction
   // todo: I think need auctionDataExtended also
   items: AuctionViewItem[][]; // must add (I think we will have onle one item everytime)

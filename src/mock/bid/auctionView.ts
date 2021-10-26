@@ -14,12 +14,14 @@ import {
   AuctionData,
   AuctionState,
   Bid,
+  BidderPot,
   BidState,
   BidStateType,
   PriceFloor,
   PriceFloorType,
 } from './../../common/actions/auction';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PartialAuctionView } from '../../common';
 
 const auction: AuctionData = new AuctionData({
   authority: '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan',
@@ -110,6 +112,13 @@ const auctiomManager: AuctionManager = new AuctionManager({
   bidRedemptions: [],
 });
 
+const bidderPot = new BidderPot({
+  bidderPot: '96zzVz6G17Eg1UosGFt4MVj2FUjLCb6Kk7FAQaDwaTis',
+  bidderAct: '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan',
+  auctionAct: 'DjpVdFxmbLRx7QDF9vFTFJ96iD7mzvxz5M3N49k4EHDG',
+  emptied: false,
+});
+
 export default {
   auctionManager: {
     pubkey: 'JEBT6WNy86TRcqbG4vQwAaA6n8NpzsjPDfXXvi1Fs526',
@@ -122,19 +131,7 @@ export default {
     pubkey: 'Bp7rwFtx9hyqVp5QrD8QijYMGNNBt9J3h21bi9TFGvpG',
     data: {
       type: 'vault',
-      info: {
-        key: 3,
-        tokenProgram: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-        fractionMint: 'CdqLmuHfLx61rh5jhFxpM6es37DBMRGwx7oABRMGsuKR',
-        authority: 'JEBT6WNy86TRcqbG4vQwAaA6n8NpzsjPDfXXvi1Fs526',
-        fractionTreasury: '8MhFUEtj4rH5JvURar95DJ8xc5Dh2wsoFntEadHjD5zS',
-        redeemTreasury: '7sQp1oivZcQQSvQoTYXG6orYgvKnBx6s2RzFm74DDcEg',
-        allowFurtherShareCreation: 1,
-        pricingLookupAddress: 'ENZaEj66YD9RukdiAyXATXhDTwLH13GQMikqBWfM7hK1',
-        tokenTypeCount: 1,
-        state: 2,
-        lockedPricePerShare: '00',
-      },
+      info: vault,
     },
   },
   auction: {
@@ -148,12 +145,7 @@ export default {
     pubkey: 'HM2NWR2ELPmD4BfMhaFwihcs4u1DwcrENYSRstu4WjJa',
     data: {
       type: 'bidderPot',
-      info: {
-        bidderPot: '96zzVz6G17Eg1UosGFt4MVj2FUjLCb6Kk7FAQaDwaTis',
-        bidderAct: '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan',
-        auctionAct: 'DjpVdFxmbLRx7QDF9vFTFJ96iD7mzvxz5M3N49k4EHDG',
-        emptied: 0,
-      },
+      info: bidderPot,
     },
   },
-};
+} as PartialAuctionView;

@@ -1,36 +1,22 @@
-import { pubkeyToString, StringPublicKey } from './../../common/utils/ids';
+// import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
+import { AccountLayout, MintInfo } from '@solana/spl-token';
+import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
+import BN from 'bn.js';
 import {
-  Keypair,
-  Connection,
-  TransactionInstruction,
-  AccountInfo,
-} from '@solana/web3.js';
-import {
-  sendTransactionWithRetry,
-  placeBid,
-  cache,
-  ensureWrappedAccount,
-  toLamports,
-  ParsedAccount,
-  toPublicKey,
-  WalletSigner,
   approve,
   createTokenAccount,
-  TokenAccount,
+  ensureWrappedAccount,
+  ParsedAccount,
   PartialAuctionView,
-  SCHEMA,
-  TokenAccountParser,
+  placeBid,
+  TokenAccount,
+  toLamports,
+  toPublicKey,
+  WalletSigner,
 } from '../../common';
-// import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
-
-import { AccountLayout, MintInfo } from '@solana/spl-token';
-import BN from 'bn.js';
+import mintMock from '../../mock/cache/mintMock';
+import tokenAccountMock from '../../mock/cache/tokenAccountMock';
 import { setupCancelBid } from './cancelBid';
-import { QUOTE_MINT } from '../constants';
-import { AuctionView } from '../types';
-import { deserialize, deserializeUnchecked } from 'borsh';
-import tokenAccountMock from '../../mock/bid/tokenAccountMock';
-import mintMock from '../../mock/bid/mintMock';
 
 export async function sendPlaceBid(
   connection: Connection,

@@ -52,7 +52,7 @@ import { createMintAndAccountWithOne } from './createMintAndAccountWithOne';
 import BN from 'bn.js';
 import { QUOTE_MINT } from '../constants';
 import { AuctionView } from '../types';
-import safetyDepositAccount from '../../mock/redeem/safetyDepositAccount';
+import safetyDepositAccount from '../../mock/cache/safetyDepositAccount';
 
 export function eligibleForParticipationPrizeGivenWinningIndex(
   winnerIndex: number | null,

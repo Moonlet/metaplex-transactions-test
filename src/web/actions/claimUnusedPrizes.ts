@@ -24,7 +24,7 @@ import {
   WinningConfigType,
   withdrawMasterEdition,
 } from '../../common';
-import safetyDepositAccount from '../../mock/redeem/safetyDepositAccount';
+import safetyDepositAccount from '../../mock/cache/safetyDepositAccount';
 import { AuctionView } from '../types';
 import { eligibleForParticipationPrizeGivenWinningIndex } from './sendRedeemBid';
 

@@ -1,5 +1,5 @@
 import { connection, walletSinger } from './common-setup';
-import auctionView from './mock/redeem/auctionView';
+import auctionView from './mock/redeem/auctionViewItems';
 import bidsToClaim from './mock/redeem/bidsToClaim';
 import { settle } from './web/actions/settle';
 
@@ -9,8 +9,8 @@ export const settleAuction = async () => {
   await settle(
     connection,
     walletSinger,
-    auctionView as any,
-    bidsToClaim as any,
+    auctionView,
+    bidsToClaim,
     payingAccount
   );
 };
