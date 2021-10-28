@@ -1,14 +1,13 @@
-import { AuctionViewItem } from './../../common/models/metaplex/index';
-import { BidderMetadata } from './../../common/actions/auction';
+import { BidderMetadata } from '../../blockchain/instructions-builder/main/auction';
 import BN from 'bn.js';
-import { SafetyDepositBox } from '../../common/actions/vault';
+import { SafetyDepositBox } from '../../blockchain/instructions-builder/main/vault';
 import {
   Metadata,
   MasterEditionV2,
   MetadataKey,
-} from '../../common/actions/metadata';
+} from '../../blockchain/instructions-builder/main/metadata';
 import defaultAuctionView from '../bid/auctionView';
-import { PartialAuctionView } from '../../common';
+import { AuctionViewItem, PartialAuctionView } from '../../blockchain';
 
 export const metadata: Metadata = new Metadata({
   updateAuthority: 'JEBT6WNy86TRcqbG4vQwAaA6n8NpzsjPDfXXvi1Fs526',

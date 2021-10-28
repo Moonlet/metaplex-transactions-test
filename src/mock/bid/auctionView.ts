@@ -1,14 +1,8 @@
-import { Vault, SafetyDepositBox } from './../../common/actions/vault';
 import {
-  AuctionManager,
-  AuctionManagerV2,
-  AuctionManagerStateV2,
-  AuctionManagerStatus,
-  SafetyDepositConfig,
-  WinningConfigType,
-  TupleNumericType,
-  AmountRange,
-} from './../../common/models/metaplex/index';
+  Vault,
+  SafetyDepositBox,
+} from '../../blockchain/instructions-builder/main/vault';
+
 import BN from 'bn.js';
 import {
   AuctionData,
@@ -19,9 +13,19 @@ import {
   BidStateType,
   PriceFloor,
   PriceFloorType,
-} from './../../common/actions/auction';
+} from '../../blockchain/instructions-builder/main/auction';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { PartialAuctionView } from '../../common';
+import {
+  AmountRange,
+  AuctionManager,
+  AuctionManagerStateV2,
+  AuctionManagerStatus,
+  AuctionManagerV2,
+  PartialAuctionView,
+  SafetyDepositConfig,
+  TupleNumericType,
+  WinningConfigType,
+} from '../../blockchain';
 
 const auction: AuctionData = new AuctionData({
   authority: '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan',

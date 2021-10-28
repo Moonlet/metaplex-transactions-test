@@ -1,5 +1,5 @@
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
-import { ENDPOINTS, WalletSigner } from './common';
+import { ENDPOINTS, WalletSigner } from './blockchain';
 
 export const connection = new Connection(ENDPOINTS[0].endpoint);
 

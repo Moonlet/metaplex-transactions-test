@@ -1,4 +1,4 @@
-import { ParsedAccount, WhitelistedCreator } from '../../common';
+import { ParsedAccount, WhitelistedCreator } from '../../blockchain';
 
 export default {
   '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan': {

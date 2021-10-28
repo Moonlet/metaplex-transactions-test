@@ -1,6 +1,6 @@
 import BN from 'bn.js';
-import { AmountRange, Metadata, WinningConfigType } from '../../common';
-import { SafetyDepositDraft } from '../../web/actions/createAuctionManager';
+import { AmountRange, Metadata, WinningConfigType } from '../../blockchain';
+import { SafetyDepositDraft } from '../../blockchain/actions/createAuctionManager';
 import { masterEdition, metadata } from '../redeem/auctionViewItems';
 
 const metadataNFT: Metadata = Object.assign({}, metadata);

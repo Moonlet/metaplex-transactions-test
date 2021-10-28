@@ -1,6 +1,6 @@
 import { connection, walletSinger } from './common-setup';
 import auctionView from './mock/bid/auctionView';
-import { sendPlaceBid } from './web/actions/sendPlaceBid';
+import { sendPlaceBid } from './blockchain/actions/sendPlaceBid';
 const bidderAccount = '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan';
 const amount = 0.011;
 

@@ -1,6 +1,6 @@
 import { connection, walletSinger } from './common-setup';
 import auctionView from './mock/redeem/auctionViewItems';
-import { sendRedeemBid } from './web/actions/sendRedeemBid';
+import { sendRedeemBid } from './blockchain/actions/sendRedeemBid';
 
 const payingAccount = '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan';
 

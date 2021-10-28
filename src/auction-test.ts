@@ -1,9 +1,9 @@
 import { connection, walletSinger } from './common-setup';
+import { createAuctionManager } from './blockchain/actions/createAuctionManager';
 import auctionSettings from './mock/auction/auctionSettings';
 import auctionSettingsInstantSale from './mock/auction/auctionSettingsInstantSale';
 import safetyDepositDrafts from './mock/auction/safetyDepositDrafts';
 import whitelistedCreatorsByCreator from './mock/auction/whitelistedCreatorsByCreator';
-import { createAuctionManager } from './web/actions/createAuctionManager';
 
 export const triggerAuction = async () => {
   console.log('~~~~~~~INPUT DATA~~~~~~~');

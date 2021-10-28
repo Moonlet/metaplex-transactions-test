@@ -1,4 +1,4 @@
-import { BidderPot, ParsedAccount } from '../../common';
+import { BidderPot, ParsedAccount } from '../../blockchain';
 
 export default [
   {

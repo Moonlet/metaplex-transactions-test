@@ -7,7 +7,7 @@ import {
   WinnerLimit,
   WinnerLimitType,
   QUOTE_MINT,
-} from '../../common';
+} from '../../blockchain';
 
 export default {
   winners: new WinnerLimit({
