@@ -5,6 +5,12 @@ import { sendRedeemBid } from './web/actions/sendRedeemBid';
 const payingAccount = 'payingAccount';
 
 export const redeemAuction = async () => {
-  await sendRedeemBid(connection, walletSinger, payingAccount, auctionView);
+  const result = await sendRedeemBid(
+    connection,
+    walletSinger,
+    payingAccount,
+    auctionView
+  );
+  console.log(result);
 };
 redeemAuction();

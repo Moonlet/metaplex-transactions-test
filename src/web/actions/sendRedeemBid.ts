@@ -64,11 +64,11 @@ export async function sendRedeemBid(
   // prizeTrackingTickets: Record<string, ParsedAccount<PrizeTrackingTicket>>,
   // bidRedemptions: Record<string, ParsedAccount<BidRedemptionTicket>>,
   // bids: ParsedAccount<BidderMetadata>[]
-) {
+): Promise<[TransactionInstruction[][], Keypair[][]]> {
   if (!wallet.publicKey) throw new Error();
 
-  const signers: Array<Keypair[]> = [];
-  const instructions: Array<TransactionInstruction[]> = [];
+  const signers: Keypair[][] = [];
+  const instructions: TransactionInstruction[][] = [];
 
   if (
     auctionView.auction.data.info.ended() &&
@@ -266,8 +266,10 @@ export async function sendRedeemBid(
     );
   }
 
-  console.log('instructions: ', instructions);
-  console.log('signers: ', signers);
+  // console.log('instructions: ', instructions);
+  // console.log('signers: ', signers);
+
+  return [instructions, signers];
 
   // await sendTransactionsWithManualRetry(
   //   connection,

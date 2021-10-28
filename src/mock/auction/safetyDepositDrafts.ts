@@ -3,9 +3,8 @@ import { AmountRange, Metadata, WinningConfigType } from '../../common';
 import { SafetyDepositDraft } from '../../web/actions/createAuctionManager';
 import { masterEdition, metadata } from '../redeem/auctionViewItems';
 
-const metadataAuction: Metadata = Object.assign({}, metadata);
-metadataAuction.updateAuthority =
-  '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan';
+const metadataNFT: Metadata = Object.assign({}, metadata);
+metadataNFT.updateAuthority = '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan';
 
 export default [
   {
@@ -16,7 +15,7 @@ export default [
     },
     metadata: {
       pubkey: 'Cuy1tipqYDAuugRU7ZfrpGYBBufzPEssRUpWUEAmKtZ',
-      info: metadataAuction,
+      info: metadataNFT,
     },
     winningConfigType: WinningConfigType.FullRightsTransfer,
     amountRanges: [new AmountRange({ amount: new BN(1), length: new BN(1) })],

@@ -61,6 +61,12 @@ interface arrayPattern {
   signers: Keypair[][];
 }
 
+export type CreateAuctionData = {
+  vault: StringPublicKey;
+  auction: StringPublicKey;
+  auctionManager: StringPublicKey;
+};
+
 interface byType {
   // markItemsThatArentMineAsSold: arrayPattern;
   addTokens: arrayPattern;
@@ -105,12 +111,15 @@ export async function createAuctionManager(
   // paymentMint: StringPublicKey,
   // storeIndexer: ParsedAccount<StoreIndexer>[],
 ): Promise<
-  | {
+  [
+    TransactionInstruction[][],
+    Keypair[][],
+    {
       vault: StringPublicKey;
       auction: StringPublicKey;
       auctionManager: StringPublicKey;
     }
-  | undefined
+  ]
 > {
   const paymentMint: StringPublicKey = QUOTE_MINT.toBase58();
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
@@ -330,18 +339,17 @@ export async function createAuctionManager(
 
   let filteredSigners = signers.filter((_, i) => !toRemoveSigners[i]);
 
-  console.log('instructions: ', instructions);
-  console.log('signers: ', filteredSigners);
-  console.log(
-    'instructionsLength: ',
-    instructions.map((a) => a.length).reduce((a, b) => a + b, 0)
-  );
-  console.log(
-    'signers: ',
-    filteredSigners.map((a) => a.length).reduce((a, b) => a + b, 0)
-  );
+  return [
+    instructions,
+    filteredSigners,
+    {
+      vault,
+      auction,
+      auctionManager,
+    },
+  ];
 
-  return { vault, auction, auctionManager };
+  // return { vault, auction, auctionManager };
 
   // // test all in one transaction
   // await sendTransactionsInSingleTransaction(
@@ -398,7 +406,7 @@ export async function createAuctionManager(
   }
 
   if (stopPoint < instructions.length) throw new Error('Failed to create');
-  return { vault, auction, auctionManager };
+  // return { vault, auction, auctionManager };
 }
 
 async function buildSafetyDepositArray(

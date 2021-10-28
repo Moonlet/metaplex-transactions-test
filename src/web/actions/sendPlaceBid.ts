@@ -25,7 +25,7 @@ export async function sendPlaceBid(
   auctionView: PartialAuctionView,
   // value entered by the user adjust to decimals of the mint
   amount: number | BN
-) {
+): Promise<[TransactionInstruction[][], Keypair[][]]> {
   const signers: Keypair[][] = [];
   const instructions: TransactionInstruction[][] = [];
   const bid = await setupPlaceBid(
@@ -38,17 +38,7 @@ export async function sendPlaceBid(
     signers
   );
 
-  console.log('instructions: ', instructions);
-  console.log('signers: ', signers);
-
-  console.log(
-    'instructionsLength: ',
-    instructions.map((a) => a.length).reduce((a, b) => a + b, 0)
-  );
-  console.log(
-    'signers: ',
-    signers.map((a) => a.length).reduce((a, b) => a + b, 0)
-  );
+  return [instructions, signers];
 
   // await sendTransactionWithRetry(
   //   connection,
@@ -58,9 +48,9 @@ export async function sendPlaceBid(
   //   'single',
   // );
 
-  return {
-    amount: bid,
-  };
+  // return {
+  //   amount: bid,
+  // };
 }
 
 export async function setupPlaceBid(

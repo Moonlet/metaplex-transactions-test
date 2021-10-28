@@ -27,11 +27,11 @@ export async function settle(
   connection: Connection,
   wallet: WalletSigner,
   auctionView: PartialAuctionView,
-  bidsToClaim: ParsedAccount<BidderPot>[], // only one winner every time
+  bidsToClaim: ParsedAccount<BidderPot>[], // only one winner every time?
   payingAccount: string | undefined
-) {
-  const signers: Array<Keypair[]> = [];
-  const instructions: Array<TransactionInstruction[]> = [];
+): Promise<[TransactionInstruction[][], Keypair[][]]> {
+  const signers: Keypair[][] = [];
+  const instructions: TransactionInstruction[][] = [];
   if (
     auctionView.auction.data.info.ended() &&
     auctionView.auction.data.info.state !== AuctionState.Ended
@@ -46,9 +46,6 @@ export async function settle(
       signers
     );
 
-    console.log('[general] Instruction: ', instructions);
-    console.log('[general] Signers: ', signers);
-    console.log('~~~~~~~');
     // await sendTransactionWithRetry(
     //   connection,
     //   wallet,
@@ -57,24 +54,37 @@ export async function settle(
     // );
   }
 
-  // bidsToClaim = winner bid (only one)
-  await claimAllBids(connection, wallet, auctionView, bidsToClaim);
-  await emptyPaymentAccountForAllTokens(connection, wallet, auctionView);
+  await claimAllBids(
+    connection,
+    wallet,
+    auctionView,
+    bidsToClaim,
+    signers,
+    instructions
+  );
+  await emptyPaymentAccountForAllTokens(
+    connection,
+    wallet,
+    auctionView,
+    signers,
+    instructions
+  );
+
+  return [instructions, signers];
 }
 
 async function emptyPaymentAccountForAllTokens(
   connection: Connection,
   wallet: WalletSigner,
-  auctionView: PartialAuctionView
-) {
+  auctionView: PartialAuctionView,
+  currSignerBatch: Keypair[][],
+  currInstrBatch: TransactionInstruction[][]
+): Promise<[TransactionInstruction[][], Keypair[][]]> {
   if (!wallet.publicKey) throw new Error();
 
   const PROGRAM_IDS = programIds();
-  const signers: Array<Array<Keypair[]>> = [];
-  const instructions: Array<Array<TransactionInstruction[]>> = [];
-
-  let currSignerBatch: Array<Keypair[]> = [];
-  let currInstrBatch: Array<TransactionInstruction[]> = [];
+  // const signers: Array<Array<Keypair[]>> = [];
+  // const instructions: Array<Array<TransactionInstruction[]>> = [];
 
   let settleSigners: Keypair[] = [];
   let settleInstructions: TransactionInstruction[] = [];
@@ -87,6 +97,7 @@ async function emptyPaymentAccountForAllTokens(
     ...auctionView.items,
     // ...(auctionView.participationItem ? [[auctionView.participationItem]] : []), // dont have participationItem
   ];
+  // only one every time
   for (let i = 0; i < prizeArrays.length; i++) {
     const items = prizeArrays[i];
 
@@ -159,12 +170,12 @@ async function emptyPaymentAccountForAllTokens(
           settleInstructions = [];
         }
 
-        if (currInstrBatch.length === BATCH_SIZE) {
-          signers.push(currSignerBatch);
-          instructions.push(currInstrBatch);
-          currSignerBatch = [];
-          currInstrBatch = [];
-        }
+        // if (currInstrBatch.length === BATCH_SIZE) {
+        //   signers.push(currSignerBatch);
+        //   instructions.push(currInstrBatch);
+        //   currSignerBatch = [];
+        //   currInstrBatch = [];
+        // }
       }
     }
   }
@@ -177,53 +188,50 @@ async function emptyPaymentAccountForAllTokens(
     currInstrBatch.push(settleInstructions);
   }
 
-  if (currInstrBatch.length <= BATCH_SIZE && currInstrBatch.length > 0) {
-    // add the last one on
-    signers.push(currSignerBatch);
-    instructions.push(currInstrBatch);
-  }
-  console.log('[emptyPayment] Instructions', instructions);
-  console.log('[emptyPayment] Signers', signers);
-  console.log('~~~~~~~');
-  return;
+  // if (currInstrBatch.length <= BATCH_SIZE && currInstrBatch.length > 0) {
+  //   // add the last one on
+  //   signers.push(currSignerBatch);
+  //   instructions.push(currInstrBatch);
+  // }
 
-  for (let i = 0; i < instructions.length; i++) {
-    const instructionBatch = instructions[i];
-    const signerBatch = signers[i];
-    if (instructionBatch.length >= 2)
-      // Pump em through!
-      await sendTransactions(
-        connection,
-        wallet,
-        instructionBatch,
-        signerBatch,
-        SequenceType.StopOnFailure,
-        'single'
-      );
-    else
-      await sendTransactionWithRetry(
-        connection,
-        wallet,
-        instructionBatch[0],
-        signerBatch[0],
-        'single'
-      );
-  }
+  return [currInstrBatch, currSignerBatch];
+
+  // for (let i = 0; i < instructions.length; i++) {
+  //   const instructionBatch = instructions[i];
+  //   const signerBatch = signers[i];
+  //   if (instructionBatch.length >= 2)
+  //     // Pump em through!
+  //     await sendTransactions(
+  //       connection,
+  //       wallet,
+  //       instructionBatch,
+  //       signerBatch,
+  //       SequenceType.StopOnFailure,
+  //       'single'
+  //     );
+  //   else
+  //     await sendTransactionWithRetry(
+  //       connection,
+  //       wallet,
+  //       instructionBatch[0],
+  //       signerBatch[0],
+  //       'single'
+  //     );
+  // }
 }
 
 async function claimAllBids(
   connection: Connection,
   wallet: WalletSigner,
   auctionView: PartialAuctionView,
-  bids: ParsedAccount<BidderPot>[]
-) {
-  const signers: Array<Array<Keypair[]>> = [];
-  const instructions: Array<Array<TransactionInstruction[]>> = [];
+  bids: ParsedAccount<BidderPot>[],
+  currSignerBatch: Keypair[][],
+  currInstrBatch: TransactionInstruction[][]
+): Promise<[TransactionInstruction[][], Keypair[][]]> {
+  // const signers: Array<Array<Keypair[]>> = [];
+  // const instructions: Array<Array<TransactionInstruction[]>> = [];
 
-  let currSignerBatch: Array<Keypair[]> = [];
-  let currInstrBatch: Array<TransactionInstruction[]> = [];
-
-  let claimBidSigners: Keypair[] = [];
+  let claimBidSigners: Keypair[] = []; // every time is [] ?
   let claimBidInstructions: TransactionInstruction[] = [];
 
   // TODO replace all this with payer account so user doesnt need to click approve several times.
@@ -249,12 +257,12 @@ async function claimAllBids(
       claimBidInstructions = [];
     }
 
-    if (currInstrBatch.length === BATCH_SIZE) {
-      signers.push(currSignerBatch);
-      instructions.push(currInstrBatch);
-      currSignerBatch = [];
-      currInstrBatch = [];
-    }
+    // if (currInstrBatch.length === BATCH_SIZE) {
+    //   signers.push(currSignerBatch);
+    //   instructions.push(currInstrBatch);
+    //   currSignerBatch = [];
+    //   currInstrBatch = [];
+    // }
   }
 
   if (
@@ -265,37 +273,36 @@ async function claimAllBids(
     currInstrBatch.push(claimBidInstructions);
   }
 
-  if (currInstrBatch.length <= BATCH_SIZE && currInstrBatch.length > 0) {
-    // add the last one on
-    signers.push(currSignerBatch);
-    instructions.push(currInstrBatch);
-  }
-  console.log('[claimAllBids] Instructions', instructions);
-  console.log('[claimAllBids] Signers', signers);
-  console.log('~~~~~~~');
-  return;
-  for (let i = 0; i < instructions.length; i++) {
-    const instructionBatch = instructions[i];
-    const signerBatch = signers[i];
-    console.log('Running batch', i);
-    if (instructionBatch.length >= 2)
-      // Pump em through!
-      await sendTransactions(
-        connection,
-        wallet,
-        instructionBatch,
-        signerBatch,
-        SequenceType.StopOnFailure,
-        'single'
-      );
-    else
-      await sendTransactionWithRetry(
-        connection,
-        wallet,
-        instructionBatch[0],
-        signerBatch[0],
-        'single'
-      );
-    console.log('Done');
-  }
+  // if (currInstrBatch.length <= BATCH_SIZE && currInstrBatch.length > 0) {
+  //   // add the last one on
+  //   signers.push(currSignerBatch);
+  //   instructions.push(currInstrBatch);
+  // }
+
+  return [currInstrBatch, currSignerBatch];
+  // return;
+  // for (let i = 0; i < instructions.length; i++) {
+  //   const instructionBatch = instructions[i];
+  //   const signerBatch = signers[i];
+  //   console.log('Running batch', i);
+  //   if (instructionBatch.length >= 2)
+  //     // Pump em through!
+  //     await sendTransactions(
+  //       connection,
+  //       wallet,
+  //       instructionBatch,
+  //       signerBatch,
+  //       SequenceType.StopOnFailure,
+  //       'single'
+  //     );
+  //   else
+  //     await sendTransactionWithRetry(
+  //       connection,
+  //       wallet,
+  //       instructionBatch[0],
+  //       signerBatch[0],
+  //       'single'
+  //     );
+  //   console.log('Done');
+  // }
 }

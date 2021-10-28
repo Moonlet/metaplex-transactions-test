@@ -6,22 +6,24 @@ const amount = 0.011;
 
 export const placeBid = async () => {
   const { myBidderPot, ...auctionViewNoBidder } = auctionView;
-  await sendPlaceBid(
+  const result = await sendPlaceBid(
     connection,
     walletSinger,
     bidderAccount,
     auctionViewNoBidder,
     amount
   );
+  console.log(result);
 };
 
 export const placeBidWithCancelPrevious = async () => {
-  await sendPlaceBid(
+  const result = await sendPlaceBid(
     connection,
     walletSinger,
     bidderAccount,
     auctionView as any,
     amount
   );
+  console.log(result);
 };
 placeBid();

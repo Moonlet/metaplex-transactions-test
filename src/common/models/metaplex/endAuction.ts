@@ -5,7 +5,7 @@ import {
   programIds,
   toPublicKey,
   SCHEMA,
-} from '../../common';
+} from '../..';
 import {
   PublicKey,
   SYSVAR_CLOCK_PUBKEY,

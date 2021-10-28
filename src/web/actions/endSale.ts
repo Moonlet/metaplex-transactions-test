@@ -17,7 +17,7 @@ import {
 } from '../../common';
 import { AuctionView } from '../types';
 import { claimUnusedPrizes } from './claimUnusedPrizes';
-import { endAuction } from './endAuction';
+import { endAuction } from '../../common/models/metaplex/endAuction';
 
 interface EndSaleParams {
   auctionView: PartialAuctionView;
