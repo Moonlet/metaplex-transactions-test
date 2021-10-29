@@ -1,11 +1,13 @@
 // import { WalletAdapter } from '@solana/wallet-adapter-base';
 import { AccountInfo, PublicKey, Transaction } from '@solana/web3.js';
-import { AuctionManager, AuctionViewItem, BidRedemptionTicket } from '.';
 import {
   AuctionData,
   AuctionDataExtended,
+  AuctionManager,
+  AuctionViewItem,
   BidderMetadata,
   BidderPot,
+  BidRedemptionTicket,
   SafetyDepositBox,
   Vault,
 } from '../instructions-builder/main';

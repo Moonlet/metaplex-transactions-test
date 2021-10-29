@@ -3,28 +3,28 @@ import BN from 'bn.js';
 import bs58 from 'bs58';
 import { deserializeUnchecked } from 'borsh';
 import {
-  ParsedAccount,
-  AuctionManagerV1,
-  ParticipationConfigV1,
-  AccountParser,
-  BidRedemptionTicketV1,
-  DEPRECATED_SCHEMA,
-} from '.';
-import {
-  StringPublicKey,
   AuctionData,
   Vault,
   Metadata,
   MasterEditionV1,
   MasterEditionV2,
   SafetyDepositBox,
-  programIds,
   getAuctionExtended,
-  findProgramAddress,
-  toPublicKey,
   AUCTION_PREFIX,
   METADATA,
-} from '..';
+} from '.';
+import {
+  StringPublicKey,
+  ParsedAccount,
+  AuctionManagerV1,
+  ParticipationConfigV1,
+  programIds,
+  AccountParser,
+  BidRedemptionTicketV1,
+  DEPRECATED_SCHEMA,
+  findProgramAddress,
+  toPublicKey,
+} from '../..';
 
 export const METAPLEX_PREFIX = 'metaplex';
 export const INDEX = 'index';
@@ -825,6 +825,280 @@ export class ValidateSafetyDepositBoxV2Args {
   }
 }
 
+export async function getAuctionManagerKey(
+  vault: string,
+  auctionKey: string
+): Promise<string> {
+  const PROGRAM_IDS = programIds();
+
+  return (
+    await findProgramAddress(
+      [Buffer.from(METAPLEX_PREFIX), toPublicKey(auctionKey).toBuffer()],
+      toPublicKey(PROGRAM_IDS.metaplex)
+    )
+  )[0];
+}
+
+export async function getAuctionKeys(
+  vault: string
+): Promise<{ auctionKey: string; auctionManagerKey: string }> {
+  const PROGRAM_IDS = programIds();
+
+  const auctionKey = (
+    await findProgramAddress(
+      [
+        Buffer.from(AUCTION_PREFIX),
+        toPublicKey(PROGRAM_IDS.auction).toBuffer(),
+        toPublicKey(vault).toBuffer(),
+      ],
+      toPublicKey(PROGRAM_IDS.auction)
+    )
+  )[0];
+
+  const auctionManagerKey = await getAuctionManagerKey(vault, auctionKey);
+
+  return { auctionKey, auctionManagerKey };
+}
+
+export async function getBidRedemption(
+  auctionKey: string,
+  bidMetadata: string
+): Promise<string> {
+  const PROGRAM_IDS = programIds();
+
+  return (
+    await findProgramAddress(
+      [
+        Buffer.from(METAPLEX_PREFIX),
+        toPublicKey(auctionKey).toBuffer(),
+        toPublicKey(bidMetadata).toBuffer(),
+      ],
+      toPublicKey(PROGRAM_IDS.metaplex)
+    )
+  )[0];
+}
+
+export async function getBidderKeys(
+  auctionKey: string,
+  bidder: string
+): Promise<{ bidMetadata: string; bidRedemption: string }> {
+  const PROGRAM_IDS = programIds();
+
+  const bidMetadata = (
+    await findProgramAddress(
+      [
+        Buffer.from(AUCTION_PREFIX),
+        toPublicKey(PROGRAM_IDS.auction).toBuffer(),
+        toPublicKey(auctionKey).toBuffer(),
+        toPublicKey(bidder).toBuffer(),
+        Buffer.from(METADATA),
+      ],
+      toPublicKey(PROGRAM_IDS.auction)
+    )
+  )[0];
+
+  const bidRedemption = await getBidRedemption(auctionKey, bidMetadata);
+
+  return { bidMetadata, bidRedemption };
+}
+
+export async function getOriginalAuthority(
+  auctionKey: string,
+  metadata: string
+): Promise<string> {
+  const PROGRAM_IDS = programIds();
+
+  return (
+    await findProgramAddress(
+      [
+        Buffer.from(METAPLEX_PREFIX),
+        toPublicKey(auctionKey).toBuffer(),
+        toPublicKey(metadata).toBuffer(),
+      ],
+      toPublicKey(PROGRAM_IDS.metaplex)
+    )
+  )[0];
+}
+
+export const isCreatorPartOfTheStore = async (
+  creatorAddress: StringPublicKey,
+  pubkey: StringPublicKey,
+  store?: StringPublicKey
+) => {
+  const creatorKeyInStore = await getWhitelistedCreator(creatorAddress, store);
+
+  return creatorKeyInStore === pubkey;
+};
+
+export async function getWhitelistedCreator(
+  creator: StringPublicKey,
+  storeId?: StringPublicKey
+) {
+  const PROGRAM_IDS = programIds();
+  const store = storeId || PROGRAM_IDS.store;
+  if (!store) {
+    throw new Error('Store not initialized');
+  }
+
+  return (
+    await findProgramAddress(
+      [
+        Buffer.from(METAPLEX_PREFIX),
+        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
+        toPublicKey(store).toBuffer(),
+        toPublicKey(creator).toBuffer(),
+      ],
+      toPublicKey(PROGRAM_IDS.metaplex)
+    )
+  )[0];
+}
+
+export async function getPrizeTrackingTicket(
+  auctionManager: string,
+  mint: string
+) {
+  const PROGRAM_IDS = programIds();
+  const store = PROGRAM_IDS.store;
+  if (!store) {
+    throw new Error('Store not initialized');
+  }
+
+  return (
+    await findProgramAddress(
+      [
+        Buffer.from(METAPLEX_PREFIX),
+        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
+        toPublicKey(auctionManager).toBuffer(),
+        toPublicKey(mint).toBuffer(),
+      ],
+      toPublicKey(PROGRAM_IDS.metaplex)
+    )
+  )[0];
+}
+
+export async function getAuctionWinnerTokenTypeTracker(auctionManager: string) {
+  const PROGRAM_IDS = programIds();
+  const store = PROGRAM_IDS.store;
+  if (!store) {
+    throw new Error('Store not initialized');
+  }
+
+  return (
+    await findProgramAddress(
+      [
+        Buffer.from(METAPLEX_PREFIX),
+        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
+        toPublicKey(auctionManager).toBuffer(),
+        Buffer.from(TOTALS),
+      ],
+      toPublicKey(PROGRAM_IDS.metaplex)
+    )
+  )[0];
+}
+
+export async function getSafetyDepositConfig(
+  auctionManager: string,
+  safetyDeposit: string
+) {
+  const PROGRAM_IDS = programIds();
+  const store = PROGRAM_IDS.store;
+  if (!store) {
+    throw new Error('Store not initialized');
+  }
+
+  return (
+    await findProgramAddress(
+      [
+        Buffer.from(METAPLEX_PREFIX),
+        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
+        toPublicKey(auctionManager).toBuffer(),
+        toPublicKey(safetyDeposit).toBuffer(),
+      ],
+      toPublicKey(PROGRAM_IDS.metaplex)
+    )
+  )[0];
+}
+
+export async function getStoreIndexer(page: number) {
+  const PROGRAM_IDS = programIds();
+  const store = PROGRAM_IDS.store;
+  if (!store) {
+    throw new Error('Store not initialized');
+  }
+
+  return (
+    await findProgramAddress(
+      [
+        Buffer.from(METAPLEX_PREFIX),
+        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
+        toPublicKey(store).toBuffer(),
+        Buffer.from(INDEX),
+        Buffer.from(page.toString()),
+      ],
+      toPublicKey(PROGRAM_IDS.metaplex)
+    )
+  )[0];
+}
+
+export async function getAuctionCache(auction: StringPublicKey) {
+  const PROGRAM_IDS = programIds();
+  const store = PROGRAM_IDS.store;
+  if (!store) {
+    throw new Error('Store not initialized');
+  }
+  console.log('Auction', auction);
+  return (
+    await findProgramAddress(
+      [
+        Buffer.from(METAPLEX_PREFIX),
+        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
+        toPublicKey(store).toBuffer(),
+        toPublicKey(auction).toBuffer(),
+        Buffer.from(CACHE),
+      ],
+      toPublicKey(PROGRAM_IDS.metaplex)
+    )
+  )[0];
+}
+
+export async function getPayoutTicket(
+  auctionManager: string,
+  winnerConfigIndex: number | null | undefined,
+  winnerConfigItemIndex: number | null | undefined,
+  creatorIndex: number | null | undefined,
+  safetyDepositBox: string,
+  recipient: string
+) {
+  const PROGRAM_IDS = programIds();
+
+  return (
+    await findProgramAddress(
+      [
+        Buffer.from(METAPLEX_PREFIX),
+        toPublicKey(auctionManager).toBuffer(),
+        Buffer.from(
+          winnerConfigIndex !== null && winnerConfigIndex !== undefined
+            ? winnerConfigIndex.toString()
+            : 'participation'
+        ),
+        Buffer.from(
+          winnerConfigItemIndex !== null && winnerConfigItemIndex !== undefined
+            ? winnerConfigItemIndex.toString()
+            : '0'
+        ),
+        Buffer.from(
+          creatorIndex !== null && creatorIndex !== undefined
+            ? creatorIndex.toString()
+            : 'auctioneer'
+        ),
+        toPublicKey(safetyDepositBox).toBuffer(),
+        toPublicKey(recipient).toBuffer(),
+      ],
+      toPublicKey(PROGRAM_IDS.metaplex)
+    )
+  )[0];
+}
+
 export const SCHEMA = new Map<any, any>([
   ...(DEPRECATED_SCHEMA as any),
   [
@@ -1138,277 +1412,3 @@ export const SCHEMA = new Map<any, any>([
     },
   ],
 ]);
-
-export async function getAuctionManagerKey(
-  vault: string,
-  auctionKey: string
-): Promise<string> {
-  const PROGRAM_IDS = programIds();
-
-  return (
-    await findProgramAddress(
-      [Buffer.from(METAPLEX_PREFIX), toPublicKey(auctionKey).toBuffer()],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getAuctionKeys(
-  vault: string
-): Promise<{ auctionKey: string; auctionManagerKey: string }> {
-  const PROGRAM_IDS = programIds();
-
-  const auctionKey = (
-    await findProgramAddress(
-      [
-        Buffer.from(AUCTION_PREFIX),
-        toPublicKey(PROGRAM_IDS.auction).toBuffer(),
-        toPublicKey(vault).toBuffer(),
-      ],
-      toPublicKey(PROGRAM_IDS.auction)
-    )
-  )[0];
-
-  const auctionManagerKey = await getAuctionManagerKey(vault, auctionKey);
-
-  return { auctionKey, auctionManagerKey };
-}
-
-export async function getBidRedemption(
-  auctionKey: string,
-  bidMetadata: string
-): Promise<string> {
-  const PROGRAM_IDS = programIds();
-
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(auctionKey).toBuffer(),
-        toPublicKey(bidMetadata).toBuffer(),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getBidderKeys(
-  auctionKey: string,
-  bidder: string
-): Promise<{ bidMetadata: string; bidRedemption: string }> {
-  const PROGRAM_IDS = programIds();
-
-  const bidMetadata = (
-    await findProgramAddress(
-      [
-        Buffer.from(AUCTION_PREFIX),
-        toPublicKey(PROGRAM_IDS.auction).toBuffer(),
-        toPublicKey(auctionKey).toBuffer(),
-        toPublicKey(bidder).toBuffer(),
-        Buffer.from(METADATA),
-      ],
-      toPublicKey(PROGRAM_IDS.auction)
-    )
-  )[0];
-
-  const bidRedemption = await getBidRedemption(auctionKey, bidMetadata);
-
-  return { bidMetadata, bidRedemption };
-}
-
-export async function getOriginalAuthority(
-  auctionKey: string,
-  metadata: string
-): Promise<string> {
-  const PROGRAM_IDS = programIds();
-
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(auctionKey).toBuffer(),
-        toPublicKey(metadata).toBuffer(),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export const isCreatorPartOfTheStore = async (
-  creatorAddress: StringPublicKey,
-  pubkey: StringPublicKey,
-  store?: StringPublicKey
-) => {
-  const creatorKeyInStore = await getWhitelistedCreator(creatorAddress, store);
-
-  return creatorKeyInStore === pubkey;
-};
-
-export async function getWhitelistedCreator(
-  creator: StringPublicKey,
-  storeId?: StringPublicKey
-) {
-  const PROGRAM_IDS = programIds();
-  const store = storeId || PROGRAM_IDS.store;
-  if (!store) {
-    throw new Error('Store not initialized');
-  }
-
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
-        toPublicKey(store).toBuffer(),
-        toPublicKey(creator).toBuffer(),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getPrizeTrackingTicket(
-  auctionManager: string,
-  mint: string
-) {
-  const PROGRAM_IDS = programIds();
-  const store = PROGRAM_IDS.store;
-  if (!store) {
-    throw new Error('Store not initialized');
-  }
-
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
-        toPublicKey(auctionManager).toBuffer(),
-        toPublicKey(mint).toBuffer(),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getAuctionWinnerTokenTypeTracker(auctionManager: string) {
-  const PROGRAM_IDS = programIds();
-  const store = PROGRAM_IDS.store;
-  if (!store) {
-    throw new Error('Store not initialized');
-  }
-
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
-        toPublicKey(auctionManager).toBuffer(),
-        Buffer.from(TOTALS),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getSafetyDepositConfig(
-  auctionManager: string,
-  safetyDeposit: string
-) {
-  const PROGRAM_IDS = programIds();
-  const store = PROGRAM_IDS.store;
-  if (!store) {
-    throw new Error('Store not initialized');
-  }
-
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
-        toPublicKey(auctionManager).toBuffer(),
-        toPublicKey(safetyDeposit).toBuffer(),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getStoreIndexer(page: number) {
-  const PROGRAM_IDS = programIds();
-  const store = PROGRAM_IDS.store;
-  if (!store) {
-    throw new Error('Store not initialized');
-  }
-
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
-        toPublicKey(store).toBuffer(),
-        Buffer.from(INDEX),
-        Buffer.from(page.toString()),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getAuctionCache(auction: StringPublicKey) {
-  const PROGRAM_IDS = programIds();
-  const store = PROGRAM_IDS.store;
-  if (!store) {
-    throw new Error('Store not initialized');
-  }
-  console.log('Auction', auction);
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
-        toPublicKey(store).toBuffer(),
-        toPublicKey(auction).toBuffer(),
-        Buffer.from(CACHE),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getPayoutTicket(
-  auctionManager: string,
-  winnerConfigIndex: number | null | undefined,
-  winnerConfigItemIndex: number | null | undefined,
-  creatorIndex: number | null | undefined,
-  safetyDepositBox: string,
-  recipient: string
-) {
-  const PROGRAM_IDS = programIds();
-
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(auctionManager).toBuffer(),
-        Buffer.from(
-          winnerConfigIndex !== null && winnerConfigIndex !== undefined
-            ? winnerConfigIndex.toString()
-            : 'participation'
-        ),
-        Buffer.from(
-          winnerConfigItemIndex !== null && winnerConfigItemIndex !== undefined
-            ? winnerConfigItemIndex.toString()
-            : '0'
-        ),
-        Buffer.from(
-          creatorIndex !== null && creatorIndex !== undefined
-            ? creatorIndex.toString()
-            : 'auctioneer'
-        ),
-        toPublicKey(safetyDepositBox).toBuffer(),
-        toPublicKey(recipient).toBuffer(),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
