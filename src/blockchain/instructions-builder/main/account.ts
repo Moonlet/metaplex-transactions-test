@@ -1,18 +1,25 @@
 import { AccountLayout, MintLayout, Token } from '@solana/spl-token';
 import {
+  AccountInfo,
   Keypair,
   PublicKey,
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
   TransactionInstruction,
 } from '@solana/web3.js';
-import { TokenAccount } from '../../models/account';
+import { AccountInfo as TokenAccountInfo } from '@solana/spl-token';
 import {
   SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   WRAPPED_SOL_MINT,
 } from '../../utils/ids';
 import { programIds } from '../../utils/programIds';
+
+export interface TokenAccount {
+  pubkey: string;
+  account: AccountInfo<Buffer>;
+  info: TokenAccountInfo;
+}
 
 export function ensureSplAccount(
   instructions: TransactionInstruction[],
