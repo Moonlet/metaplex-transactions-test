@@ -380,8 +380,6 @@ export interface IPartialCreateAuctionArgs {
   gapTickSizePercentage: number | null;
 
   instantSalePrice: BN | null;
-
-  name: number[] | null;
 }
 
 export class CreateAuctionArgs implements IPartialCreateAuctionArgs {
@@ -407,7 +405,7 @@ export class CreateAuctionArgs implements IPartialCreateAuctionArgs {
 
   instantSalePrice: BN | null;
 
-  name: number[] | null;
+  // name: number[] | null;
 
   constructor(args: {
     winners: WinnerLimit;
@@ -419,7 +417,7 @@ export class CreateAuctionArgs implements IPartialCreateAuctionArgs {
     priceFloor: PriceFloor;
     tickSize: BN | null;
     gapTickSizePercentage: number | null;
-    name: number[] | null;
+    // name: number[] | null;
     instantSalePrice: BN | null;
   }) {
     this.winners = args.winners;
@@ -431,7 +429,7 @@ export class CreateAuctionArgs implements IPartialCreateAuctionArgs {
     this.priceFloor = args.priceFloor;
     this.tickSize = args.tickSize;
     this.gapTickSizePercentage = args.gapTickSizePercentage;
-    this.name = args.name;
+    // this.name = args.name;
     this.instantSalePrice = args.instantSalePrice;
   }
 }

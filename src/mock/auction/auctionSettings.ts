@@ -24,5 +24,4 @@ export default {
   gapTickSizePercentage: 2,
   tickSize: new BN(0.01 * LAMPORTS_PER_SOL),
   instantSalePrice: null,
-  name: null,
 } as IPartialCreateAuctionArgs;

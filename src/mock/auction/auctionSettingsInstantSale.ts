@@ -24,5 +24,4 @@ export default {
   gapTickSizePercentage: null,
   tickSize: null,
   instantSalePrice: new BN('989680', 'hex'),
-  name: null,
 } as IPartialCreateAuctionArgs;

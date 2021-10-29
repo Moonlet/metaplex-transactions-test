@@ -4,6 +4,8 @@ import auctionSettings from './mock/auction/auctionSettings';
 import auctionSettingsInstantSale from './mock/auction/auctionSettingsInstantSale';
 import safetyDepositDrafts from './mock/auction/safetyDepositDrafts';
 import whitelistedCreatorsByCreator from './mock/auction/whitelistedCreatorsByCreator';
+import { buildAuctionSettings } from './builder/auction-settings';
+import { SaleType } from './builder/types';
 
 export const triggerAuction = async () => {
   console.log('~~~~~~~INPUT DATA~~~~~~~');
@@ -11,12 +13,21 @@ export const triggerAuction = async () => {
   // console.log(safetyDepositDrafts);
   // console.log(whitelistedCreatorsByCreator);
 
+  const auctionSettingsBuidler = buildAuctionSettings(SaleType.Auction, 0.01, {
+    saleEnds: 1,
+    tickSize: 0.01,
+  });
+  if (!auctionSettingsBuidler) {
+    console.error('Failed to build settings');
+    return;
+  }
+
   console.log('~~~~~~~START PROCESSING~~~~~~');
   const result = await createAuctionManager(
     connection,
     walletSinger,
     whitelistedCreatorsByCreator,
-    auctionSettings,
+    auctionSettingsBuidler,
     safetyDepositDrafts
   );
 
