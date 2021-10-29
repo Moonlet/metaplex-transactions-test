@@ -1,28 +1,25 @@
-import { AccountInfo, SystemProgram } from '@solana/web3.js';
+import { SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 import bs58 from 'bs58';
-import { deserializeUnchecked } from 'borsh';
 import {
   AuctionData,
-  Vault,
-  Metadata,
+  AUCTION_PREFIX,
+  getAuctionExtended,
   MasterEditionV1,
   MasterEditionV2,
-  SafetyDepositBox,
-  getAuctionExtended,
-  AUCTION_PREFIX,
+  Metadata,
   METADATA,
+  SafetyDepositBox,
+  Vault,
 } from '.';
 import {
-  StringPublicKey,
-  ParsedAccount,
   AuctionManagerV1,
-  ParticipationConfigV1,
-  programIds,
-  AccountParser,
-  BidRedemptionTicketV1,
   DEPRECATED_SCHEMA,
   findProgramAddress,
+  ParsedAccount,
+  ParticipationConfigV1,
+  programIds,
+  StringPublicKey,
   toPublicKey,
 } from '../..';
 
@@ -508,72 +505,6 @@ export enum WinningConfigType {
   Participation,
 }
 
-export const decodeStoreIndexer = (buffer: Buffer) => {
-  return deserializeUnchecked(SCHEMA, StoreIndexer, buffer) as StoreIndexer;
-};
-
-export const decodeAuctionCache = (buffer: Buffer) => {
-  return deserializeUnchecked(SCHEMA, AuctionCache, buffer) as AuctionCache;
-};
-
-export const decodePrizeTrackingTicket = (buffer: Buffer) => {
-  return deserializeUnchecked(
-    SCHEMA,
-    PrizeTrackingTicket,
-    buffer
-  ) as PrizeTrackingTicket;
-};
-
-export const decodeWhitelistedCreator = (buffer: Buffer) => {
-  return deserializeUnchecked(
-    SCHEMA,
-    WhitelistedCreator,
-    buffer
-  ) as WhitelistedCreator;
-};
-
-export const WhitelistedCreatorParser: AccountParser = (
-  pubkey: StringPublicKey,
-  account: AccountInfo<Buffer>
-) => ({
-  pubkey,
-  account,
-  info: decodeWhitelistedCreator(account.data),
-});
-
-export const decodeStore = (buffer: Buffer) => {
-  return deserializeUnchecked(SCHEMA, Store, buffer) as Store;
-};
-
-export const decodeAuctionManager = (
-  buffer: Buffer
-): AuctionManagerV1 | AuctionManagerV2 => {
-  return buffer[0] == MetaplexKey.AuctionManagerV1
-    ? deserializeUnchecked(SCHEMA, AuctionManagerV1, buffer)
-    : deserializeUnchecked(SCHEMA, AuctionManagerV2, buffer);
-};
-
-export const decodeBidRedemptionTicket = (buffer: Buffer) => {
-  return (
-    buffer[0] == MetaplexKey.BidRedemptionTicketV1
-      ? deserializeUnchecked(SCHEMA, BidRedemptionTicketV1, buffer)
-      : new BidRedemptionTicketV2({
-          key: MetaplexKey.BidRedemptionTicketV2,
-          data: buffer.toJSON().data,
-        })
-  ) as BidRedemptionTicket;
-};
-
-export const decodeSafetyDepositConfig = (buffer: Buffer) => {
-  return new SafetyDepositConfig({
-    data: buffer,
-  });
-};
-
-export const decodePayoutTicket = (buffer: Buffer) => {
-  return deserializeUnchecked(SCHEMA, PayoutTicket, buffer) as PayoutTicket;
-};
-
 export class WhitelistedCreator {
   key: MetaplexKey = MetaplexKey.WhitelistedCreatorV1;
   address: StringPublicKey;
@@ -920,16 +851,6 @@ export async function getOriginalAuthority(
   )[0];
 }
 
-export const isCreatorPartOfTheStore = async (
-  creatorAddress: StringPublicKey,
-  pubkey: StringPublicKey,
-  store?: StringPublicKey
-) => {
-  const creatorKeyInStore = await getWhitelistedCreator(creatorAddress, store);
-
-  return creatorKeyInStore === pubkey;
-};
-
 export async function getWhitelistedCreator(
   creator: StringPublicKey,
   storeId?: StringPublicKey
@@ -947,29 +868,6 @@ export async function getWhitelistedCreator(
         toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
         toPublicKey(store).toBuffer(),
         toPublicKey(creator).toBuffer(),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getPrizeTrackingTicket(
-  auctionManager: string,
-  mint: string
-) {
-  const PROGRAM_IDS = programIds();
-  const store = PROGRAM_IDS.store;
-  if (!store) {
-    throw new Error('Store not initialized');
-  }
-
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
-        toPublicKey(auctionManager).toBuffer(),
-        toPublicKey(mint).toBuffer(),
       ],
       toPublicKey(PROGRAM_IDS.metaplex)
     )
@@ -1013,48 +911,6 @@ export async function getSafetyDepositConfig(
         toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
         toPublicKey(auctionManager).toBuffer(),
         toPublicKey(safetyDeposit).toBuffer(),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getStoreIndexer(page: number) {
-  const PROGRAM_IDS = programIds();
-  const store = PROGRAM_IDS.store;
-  if (!store) {
-    throw new Error('Store not initialized');
-  }
-
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
-        toPublicKey(store).toBuffer(),
-        Buffer.from(INDEX),
-        Buffer.from(page.toString()),
-      ],
-      toPublicKey(PROGRAM_IDS.metaplex)
-    )
-  )[0];
-}
-
-export async function getAuctionCache(auction: StringPublicKey) {
-  const PROGRAM_IDS = programIds();
-  const store = PROGRAM_IDS.store;
-  if (!store) {
-    throw new Error('Store not initialized');
-  }
-  console.log('Auction', auction);
-  return (
-    await findProgramAddress(
-      [
-        Buffer.from(METAPLEX_PREFIX),
-        toPublicKey(PROGRAM_IDS.metaplex).toBuffer(),
-        toPublicKey(store).toBuffer(),
-        toPublicKey(auction).toBuffer(),
-        Buffer.from(CACHE),
       ],
       toPublicKey(PROGRAM_IDS.metaplex)
     )

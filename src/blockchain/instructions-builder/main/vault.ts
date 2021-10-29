@@ -3,10 +3,10 @@ import {
   SYSVAR_RENT_PUBKEY,
   TransactionInstruction,
 } from '@solana/web3.js';
-import { programIds } from '../../utils/programIds';
-import { deserializeUnchecked, serialize } from 'borsh';
 import BN from 'bn.js';
+import { serialize } from 'borsh';
 import { findProgramAddress, StringPublicKey, toPublicKey } from '../../utils';
+import { programIds } from '../../utils/programIds';
 
 export const VAULT_PREFIX = 'vault';
 export enum VaultKey {
@@ -166,26 +166,6 @@ class UpdateExternalPriceAccountArgs {
     this.externalPriceAccount = args.externalPriceAccount;
   }
 }
-
-export const decodeVault = (buffer: Buffer) => {
-  return deserializeUnchecked(VAULT_SCHEMA, Vault, buffer) as Vault;
-};
-
-export const decodeExternalPriceAccount = (buffer: Buffer) => {
-  return deserializeUnchecked(
-    VAULT_SCHEMA,
-    ExternalPriceAccount,
-    buffer
-  ) as ExternalPriceAccount;
-};
-
-export const decodeSafetyDeposit = (buffer: Buffer) => {
-  return deserializeUnchecked(
-    VAULT_SCHEMA,
-    SafetyDepositBox,
-    buffer
-  ) as SafetyDepositBox;
-};
 
 export async function setVaultAuthority(
   vault: StringPublicKey,
@@ -542,88 +522,6 @@ export async function combineVault(
     },
     {
       pubkey: programIds().token,
-      isSigner: false,
-      isWritable: false,
-    },
-  ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(vaultProgramId),
-      data,
-    })
-  );
-}
-
-export async function withdrawTokenFromSafetyDepositBox(
-  amount: BN,
-  destination: StringPublicKey,
-  safetyDepositBox: StringPublicKey,
-  storeKey: StringPublicKey,
-  vault: StringPublicKey,
-  fractionMint: StringPublicKey,
-  vaultAuthority: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
-  const vaultProgramId = programIds().vault;
-
-  const transferAuthority = (
-    await findProgramAddress(
-      [
-        Buffer.from(VAULT_PREFIX),
-        toPublicKey(vaultProgramId).toBuffer(),
-        toPublicKey(vault).toBuffer(),
-      ],
-      toPublicKey(vaultProgramId)
-    )
-  )[0];
-
-  const value = new AmountArgs({ instruction: 5, amount });
-  const data = Buffer.from(serialize(VAULT_SCHEMA, value));
-
-  const keys = [
-    {
-      pubkey: toPublicKey(destination),
-      isSigner: false,
-      isWritable: true,
-    },
-    {
-      pubkey: toPublicKey(safetyDepositBox),
-      isSigner: false,
-      isWritable: true,
-    },
-    {
-      pubkey: toPublicKey(storeKey),
-      isSigner: false,
-      isWritable: true,
-    },
-    {
-      pubkey: toPublicKey(vault),
-      isSigner: false,
-      isWritable: true,
-    },
-    {
-      pubkey: toPublicKey(fractionMint),
-      isSigner: false,
-      isWritable: true,
-    },
-    {
-      pubkey: toPublicKey(vaultAuthority),
-      isSigner: true,
-      isWritable: false,
-    },
-    {
-      pubkey: toPublicKey(transferAuthority),
-      isSigner: false,
-      isWritable: false,
-    },
-    {
-      pubkey: programIds().token,
-      isSigner: false,
-      isWritable: false,
-    },
-    {
-      pubkey: SYSVAR_RENT_PUBKEY,
       isSigner: false,
       isWritable: false,
     },
