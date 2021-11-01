@@ -167,12 +167,11 @@ class UpdateExternalPriceAccountArgs {
   }
 }
 
-export async function setVaultAuthority(
+export function setVaultAuthority(
   vault: StringPublicKey,
   currentAuthority: StringPublicKey,
-  newAuthority: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  newAuthority: StringPublicKey
+): TransactionInstruction {
   const vaultProgramId = programIds().vault;
 
   const data = Buffer.from([10]);
@@ -194,25 +193,22 @@ export async function setVaultAuthority(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(vaultProgramId),
-      data: data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(vaultProgramId),
+    data: data,
+  });
 }
 
-export async function initVault(
+export function initVault(
   allowFurtherShareCreation: boolean,
   fractionalMint: StringPublicKey,
   redeemTreasury: StringPublicKey,
   fractionalTreasury: StringPublicKey,
   vault: StringPublicKey,
   vaultAuthority: StringPublicKey,
-  pricingLookupAddress: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  pricingLookupAddress: StringPublicKey
+): TransactionInstruction {
   const vaultProgramId = programIds().vault;
 
   const data = Buffer.from(
@@ -262,13 +258,11 @@ export async function initVault(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(vaultProgramId),
-      data: data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(vaultProgramId),
+    data: data,
+  });
 }
 
 export async function getSafetyDepositBox(
@@ -297,9 +291,8 @@ export async function addTokenToInactiveVault(
   vault: StringPublicKey,
   vaultAuthority: StringPublicKey,
   payer: StringPublicKey,
-  transferAuthority: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  transferAuthority: StringPublicKey
+): Promise<TransactionInstruction> {
   const vaultProgramId = programIds().vault;
 
   const safetyDepositBox = await getSafetyDepositBox(vault, tokenMint);
@@ -362,13 +355,11 @@ export async function addTokenToInactiveVault(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(vaultProgramId),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(vaultProgramId),
+    data,
+  });
 }
 
 export async function activateVault(
@@ -376,9 +367,8 @@ export async function activateVault(
   vault: StringPublicKey,
   fractionMint: StringPublicKey,
   fractionTreasury: StringPublicKey,
-  vaultAuthority: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  vaultAuthority: StringPublicKey
+): Promise<TransactionInstruction> {
   const vaultProgramId = programIds().vault;
 
   const fractionMintAuthority = (
@@ -427,13 +417,11 @@ export async function activateVault(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(vaultProgramId),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(vaultProgramId),
+    data,
+  });
 }
 
 export async function combineVault(
@@ -446,9 +434,8 @@ export async function combineVault(
   newVaultAuthority: StringPublicKey | undefined,
   vaultAuthority: StringPublicKey,
   transferAuthority: StringPublicKey,
-  externalPriceAccount: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  externalPriceAccount: StringPublicKey
+): Promise<TransactionInstruction> {
   const vaultProgramId = programIds().vault;
 
   const burnAuthority = (
@@ -526,20 +513,17 @@ export async function combineVault(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(vaultProgramId),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(vaultProgramId),
+    data,
+  });
 }
 
-export async function updateExternalPriceAccount(
+export function updateExternalPriceAccount(
   externalPriceAccountKey: StringPublicKey,
-  externalPriceAccount: ExternalPriceAccount,
-  instructions: TransactionInstruction[]
-) {
+  externalPriceAccount: ExternalPriceAccount
+): TransactionInstruction {
   const vaultProgramId = programIds().vault;
 
   const value = new UpdateExternalPriceAccountArgs({ externalPriceAccount });
@@ -553,13 +537,11 @@ export async function updateExternalPriceAccount(
       isWritable: true,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(vaultProgramId),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(vaultProgramId),
+    data,
+  });
 }
 
 export async function getSafetyDepositBoxAddress(

@@ -1,5 +1,11 @@
 // import { WalletAdapter } from '@solana/wallet-adapter-base';
-import { AccountInfo, PublicKey, Transaction } from '@solana/web3.js';
+import {
+  AccountInfo,
+  Keypair,
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+} from '@solana/web3.js';
 import {
   AuctionData,
   AuctionDataExtended,
@@ -131,6 +137,17 @@ export interface AuctionView {
   vault: ParsedAccount<Vault>;
   totallyComplete: boolean;
   isInstantSale: boolean;
+}
+
+// - with cleanUpInstructions; ??
+
+export interface ITransactionBuilder {
+  instructions: TransactionInstruction[];
+  signers: Keypair[];
+}
+
+export interface IAccountBuilder extends ITransactionBuilder {
+  account: PublicKey;
 }
 
 // export const TokenAccountParser = (

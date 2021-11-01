@@ -182,14 +182,15 @@ export async function sendRedeemBid(
       instructions.push(claimInstructions);
       signers.push(claimSigners);
       console.log('Claimed');
-      await claimBid(
+      const claimBidInstr = await claimBid(
         auctionView.auctionManager.data.info.acceptPayment,
         auctionView.myBidderMetadata.data.info.bidderPubkey,
         auctionView.myBidderPot?.data.info.bidderPot,
         auctionView.vault.pubkey,
-        auctionView.auction.data.info.tokenMint,
-        claimInstructions
+        auctionView.auction.data.info.tokenMint
+        // claimInstructions
       );
+      claimInstructions.push(claimBidInstr);
     }
   } else {
     // If you didnt win, you must have a bid we can refund before we check for open editions.
@@ -314,7 +315,7 @@ async function setupRedeemInstructions(
         winningPrizeSigner
       ).toBase58();
 
-    await redeemBid(
+    const redeemInstr = await redeemBid(
       auctionView.auctionManager.vault,
       safetyDeposit.info.store,
       newTokenAccount,
@@ -324,17 +325,17 @@ async function setupRedeemInstructions(
       wallet.publicKey.toBase58(),
       undefined,
       undefined,
-      false,
-      winningPrizeInstructions
+      false
     );
+    winningPrizeInstructions.push(redeemInstr);
 
     const metadata = await getMetadata(safetyDeposit.info.tokenMint);
-    await updatePrimarySaleHappenedViaToken(
+    const primatySaleInstr = updatePrimarySaleHappenedViaToken(
       metadata,
       wallet.publicKey.toBase58(),
-      newTokenAccount,
-      winningPrizeInstructions
+      newTokenAccount
     );
+    winningPrizeInstructions.push(primatySaleInstr);
   }
 }
 
@@ -382,7 +383,7 @@ async function setupRedeemFullRightsTransferInstructions(
         winningPrizeSigner
       ).toBase58();
 
-    await redeemFullRightsTransferBid(
+    const redeemFullInstr = await redeemFullRightsTransferBid(
       auctionView.auctionManager.data.info.vault,
       safetyDeposit.info.store,
       newTokenAccount,
@@ -390,18 +391,19 @@ async function setupRedeemFullRightsTransferInstructions(
       auctionView.vault.data.info.fractionMint,
       auctionView.myBidderMetadata.data.info.bidderPubkey,
       wallet.publicKey.toBase58(),
-      winningPrizeInstructions,
       item.metadata.pubkey,
       wallet.publicKey.toBase58()
     );
 
+    winningPrizeInstructions.push(redeemFullInstr);
+
     const metadata = await getMetadata(safetyDeposit.info.tokenMint);
-    await updatePrimarySaleHappenedViaToken(
+    const updatePrimaryInstr = updatePrimarySaleHappenedViaToken(
       metadata,
       wallet.publicKey.toBase58(),
-      newTokenAccount,
-      winningPrizeInstructions
+      newTokenAccount
     );
+    winningPrizeInstructions.push(updatePrimaryInstr);
   }
 }
 

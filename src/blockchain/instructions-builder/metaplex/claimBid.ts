@@ -1,18 +1,16 @@
 import { SYSVAR_CLOCK_PUBKEY, TransactionInstruction } from '@solana/web3.js';
 import { serialize } from 'borsh';
-
-import { getBidderPotKey, getAuctionExtended } from '../main';
+import { ClaimBidArgs, getAuctionKeys, SCHEMA } from '../..';
 import { programIds, StringPublicKey, toPublicKey } from '../../utils';
-import { getAuctionKeys, ClaimBidArgs, SCHEMA } from '../..';
+import { getAuctionExtended, getBidderPotKey } from '../main';
 
 export async function claimBid(
   acceptPayment: StringPublicKey,
   bidder: StringPublicKey,
   bidderPotToken: StringPublicKey,
   vault: StringPublicKey,
-  tokenMint: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  tokenMint: StringPublicKey
+): Promise<TransactionInstruction> {
   const PROGRAM_IDS = programIds();
   const store = PROGRAM_IDS.store;
   if (!store) {
@@ -104,11 +102,9 @@ export async function claimBid(
     },
   ];
 
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(PROGRAM_IDS.metaplex),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(PROGRAM_IDS.metaplex),
+    data,
+  });
 }

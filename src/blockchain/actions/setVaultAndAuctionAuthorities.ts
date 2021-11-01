@@ -22,18 +22,20 @@ export async function setVaultAndAuctionAuthorities(
   const signers: Keypair[] = [];
   const instructions: TransactionInstruction[] = [];
 
-  await setAuctionAuthority(
+  const auctionAuthorityInstr = setAuctionAuthority(
     auction,
     wallet.publicKey.toBase58(),
-    auctionManager,
-    instructions
+    auctionManager
   );
-  await setVaultAuthority(
+
+  instructions.push(auctionAuthorityInstr);
+
+  const vaultAuthInstr = setVaultAuthority(
     vault,
     wallet.publicKey.toBase58(),
-    auctionManager,
-    instructions
+    auctionManager
   );
+  instructions.push(vaultAuthInstr);
 
   return { instructions, signers };
 }

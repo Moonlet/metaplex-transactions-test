@@ -30,14 +30,13 @@ export async function redeemFullRightsTransferBid(
   fractionMint: StringPublicKey,
   bidder: StringPublicKey,
   payer: StringPublicKey,
-  instructions: TransactionInstruction[],
   masterMetadata: StringPublicKey,
   newAuthority: StringPublicKey,
   // If this is an auctioneer trying to reclaim a specific winning index, pass it here,
   // and this will instead call the proxy route instead of the real one, wrapping the original
   // redemption call in an override call that forces the winning index if the auctioneer is authorized.
   auctioneerReclaimIndex?: number
-) {
+): Promise<TransactionInstruction> {
   const PROGRAM_IDS = programIds();
   const store = PROGRAM_IDS.store;
   if (!store) {
@@ -194,11 +193,9 @@ export async function redeemFullRightsTransferBid(
     },
   ];
 
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(PROGRAM_IDS.metaplex),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(PROGRAM_IDS.metaplex),
+    data,
+  });
 }

@@ -68,14 +68,14 @@ export async function createVault(
   )[0];
 
   const fractionalMint = createMint(
-    instructions,
+    // instructions,
     wallet.publicKey,
     mintRentExempt,
     0,
     toPublicKey(vaultAuthority),
-    toPublicKey(vaultAuthority),
-    signers
-  ).toBase58();
+    toPublicKey(vaultAuthority)
+    // signers
+  ).account.toBase58();
 
   const redeemTreasury = createTokenAccount(
     instructions,
@@ -105,16 +105,17 @@ export async function createVault(
   instructions.push(uninitializedVault);
   signers.push(vault);
 
-  await initVault(
+  const initVaultInstr = initVault(
     true,
     fractionalMint,
     redeemTreasury,
     fractionTreasury,
     vault.publicKey.toBase58(),
     wallet.publicKey.toBase58(),
-    externalPriceAccount,
-    instructions
+    externalPriceAccount
   );
+
+  instructions.push(initVaultInstr);
 
   return {
     vault: vault.publicKey.toBase58(),

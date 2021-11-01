@@ -127,14 +127,15 @@ async function emptyPaymentAccountForAllTokens(
 
         const existingAta = await connection.getAccountInfo(toPublicKey(ata));
         console.log('Existing ata?', existingAta);
-        if (!existingAta && !ataLookup[ata])
-          createAssociatedTokenAccountInstruction(
-            settleInstructions,
+        if (!existingAta && !ataLookup[ata]) {
+          const createTokenInstr = createAssociatedTokenAccountInstruction(
             toPublicKey(ata),
             wallet.publicKey,
             toPublicKey(addresses[k]),
             QUOTE_MINT
           );
+          settleInstructions.push(createTokenInstr);
+        }
 
         ataLookup[ata] = true;
 
@@ -142,7 +143,7 @@ async function emptyPaymentAccountForAllTokens(
           ? creators.map((c) => c.address).indexOf(addresses[k])
           : null;
 
-        await emptyPaymentAccount(
+        const emptyPayTrans = await emptyPaymentAccount(
           auctionView.auctionManager.data.info.acceptPayment,
           ata,
           auctionView.auctionManager.pubkey,
@@ -159,9 +160,9 @@ async function emptyPaymentAccountForAllTokens(
             creatorIndex === null ||
             (edgeCaseWhereCreatorIsAuctioneer && k === addresses.length - 1)
             ? null
-            : creatorIndex,
-          settleInstructions
+            : creatorIndex
         );
+        settleInstructions.push(emptyPayTrans);
 
         if (settleInstructions.length >= SETTLE_TRANSACTION_SIZE) {
           currSignerBatch.push(settleSigners);
@@ -241,14 +242,15 @@ async function claimAllBids(
   for (let i = 0; i < bids.length; i++) {
     const bid = bids[i];
     console.log('Claiming', bid.info.bidderAct);
-    await claimBid(
+    const clainBidInstr = await claimBid(
       auctionView.auctionManager.data.info.acceptPayment,
       bid.info.bidderAct,
       bid.info.bidderPot,
       auctionView.vault.pubkey,
-      auctionView.auction.data.info.tokenMint,
-      claimBidInstructions
+      auctionView.auction.data.info.tokenMint
     );
+
+    claimBidInstructions.push(clainBidInstr);
 
     if (claimBidInstructions.length === CLAIM_TRANSACTION_SIZE) {
       currSignerBatch.push(claimBidSigners);

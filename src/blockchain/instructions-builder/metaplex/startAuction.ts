@@ -6,9 +6,8 @@ import { programIds, StringPublicKey, toPublicKey } from '../../utils';
 
 export async function startAuction(
   vault: StringPublicKey,
-  auctionManagerAuthority: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  auctionManagerAuthority: StringPublicKey
+): Promise<TransactionInstruction> {
   const PROGRAM_IDS = programIds();
   const store = PROGRAM_IDS.store;
   if (!store) {
@@ -54,11 +53,9 @@ export async function startAuction(
     },
   ];
 
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(PROGRAM_IDS.metaplex),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(PROGRAM_IDS.metaplex),
+    data,
+  });
 }

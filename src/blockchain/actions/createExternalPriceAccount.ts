@@ -59,7 +59,8 @@ export async function createExternalPriceAccount(
   instructions.push(uninitializedEPA);
   signers.push(externalPriceAccount);
 
-  await updateExternalPriceAccount(key, epaStruct, instructions);
+  const updateExPriceAccInstr = updateExternalPriceAccount(key, epaStruct);
+  instructions.push(updateExPriceAccInstr);
 
   return {
     externalPriceAccount: key,

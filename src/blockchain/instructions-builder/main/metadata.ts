@@ -265,12 +265,11 @@ class MintPrintingTokensArgs {
   }
 }
 
-export async function updatePrimarySaleHappenedViaToken(
+export function updatePrimarySaleHappenedViaToken(
   metadata: StringPublicKey,
   owner: StringPublicKey,
-  tokenAccount: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  tokenAccount: StringPublicKey
+): TransactionInstruction {
   const metadataProgramId = programIds().metadata;
 
   const data = Buffer.from([4]);
@@ -292,13 +291,11 @@ export async function updatePrimarySaleHappenedViaToken(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(metadataProgramId),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(metadataProgramId),
+    data,
+  });
 }
 
 export async function getEdition(

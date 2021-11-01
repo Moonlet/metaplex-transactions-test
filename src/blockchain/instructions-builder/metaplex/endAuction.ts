@@ -15,9 +15,8 @@ import { serialize } from 'borsh';
 
 export async function endAuction(
   vault: PublicKey,
-  auctionManagerAuthority: PublicKey,
-  instructions: TransactionInstruction[]
-) {
+  auctionManagerAuthority: PublicKey
+): Promise<TransactionInstruction> {
   const PROGRAM_IDS = programIds();
   const store = PROGRAM_IDS.store;
   if (!store) {
@@ -72,11 +71,9 @@ export async function endAuction(
     },
   ];
 
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(PROGRAM_IDS.metaplex),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(PROGRAM_IDS.metaplex),
+    data,
+  });
 }

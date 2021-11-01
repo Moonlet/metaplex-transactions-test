@@ -286,7 +286,7 @@ async function setupRedeemInstructions(
         winningPrizeSigner
       ).toBase58();
 
-    await redeemBid(
+    const redeemBidInstr = await redeemBid(
       auctionView.auctionManager.vault,
       safetyDeposit.info.store,
       newTokenAccount,
@@ -297,9 +297,9 @@ async function setupRedeemInstructions(
       undefined,
       undefined,
       false,
-      winningPrizeInstructions,
       winningConfigIndex
     );
+    winningPrizeInstructions.push(redeemBidInstr);
   }
 }
 
@@ -342,7 +342,7 @@ async function setupRedeemFullRightsTransferInstructions(
         winningPrizeSigner
       ).toBase58();
 
-    await redeemFullRightsTransferBid(
+    const redeemFullInstr = await redeemFullRightsTransferBid(
       auctionView.auctionManager.data.info.vault,
       safetyDeposit.info.store,
       newTokenAccount,
@@ -350,11 +350,11 @@ async function setupRedeemFullRightsTransferInstructions(
       auctionView.vault.data.info.fractionMint,
       wallet.publicKey.toBase58(),
       wallet.publicKey.toBase58(),
-      winningPrizeInstructions,
       item.metadata.pubkey,
       wallet.publicKey.toBase58(),
       winningConfigIndex
     );
+    winningPrizeInstructions.push(redeemFullInstr);
   }
 }
 

@@ -36,14 +36,14 @@ export async function closeVault(
   const signers: Keypair[] = [];
   const instructions: TransactionInstruction[] = [];
 
-  await activateVault(
+  const activateVaultInstr = await activateVault(
     new BN(0),
     vault,
     fractionMint,
     fractionTreasury,
-    wallet.publicKey.toBase58(),
-    instructions
+    wallet.publicKey.toBase58()
   );
+  instructions.push(activateVaultInstr);
 
   const outstandingShareAccount = createTokenAccount(
     instructions,
@@ -91,7 +91,7 @@ export async function closeVault(
 
   signers.push(transferAuthority);
 
-  await combineVault(
+  const combineVaultInstr = await combineVault(
     vault,
     outstandingShareAccount.toBase58(),
     payingTokenAccount.toBase58(),
@@ -101,9 +101,9 @@ export async function closeVault(
     wallet.publicKey.toBase58(),
     wallet.publicKey.toBase58(),
     transferAuthority.publicKey.toBase58(),
-    externalPriceAccount,
-    instructions
+    externalPriceAccount
   );
+  instructions.push(combineVaultInstr);
 
   return { instructions, signers };
 }

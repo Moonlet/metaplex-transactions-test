@@ -132,14 +132,15 @@ export async function setupCancelBid(
       cancelSigners
     );
 
-    await cancelBid(
+    const cancelBidInstr = await cancelBid(
       wallet.publicKey.toBase58(),
       receivingSolAccount,
       auctionView.myBidderPot.data.info.bidderPot,
       auctionView.auction.data.info.tokenMint,
-      auctionView.vault.pubkey,
-      cancelInstructions
+      auctionView.vault.pubkey
     );
+    cancelInstructions.push(cancelBidInstr);
+
     signers.push(cancelSigners);
     instructions.push([...cancelInstructions, ...cleanupInstructions]);
   }

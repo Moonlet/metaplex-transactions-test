@@ -45,7 +45,11 @@ export async function makeAuction(
     resource: vault,
   });
 
-  createAuction(fullSettings, wallet.publicKey.toBase58(), instructions);
+  const createAuctionInstr = await createAuction(
+    fullSettings,
+    wallet.publicKey.toBase58()
+  );
+  instructions.push(createAuctionInstr);
 
   return { instructions, signers, auction: auctionKey };
 }

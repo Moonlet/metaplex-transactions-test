@@ -4,8 +4,8 @@ import auctionSettings from './mock/auction/auctionSettings';
 import auctionSettingsInstantSale from './mock/auction/auctionSettingsInstantSale';
 import safetyDepositDrafts from './mock/auction/safetyDepositDrafts';
 import whitelistedCreatorsByCreator from './mock/auction/whitelistedCreatorsByCreator';
-import { buildAuctionSettings } from './builder/auction-settings';
-import { SaleType } from './builder/types';
+import { buildAuctionSettings } from './ui/auction-settings';
+import { SaleType } from './ui/types';
 
 export const triggerAuction = async () => {
   console.log('~~~~~~~INPUT DATA~~~~~~~');

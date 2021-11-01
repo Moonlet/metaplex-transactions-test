@@ -36,11 +36,9 @@ export async function endSale({
 }: EndSaleParams) {
   const { vault, auctionManager } = auctionView;
 
-  const endAuctionInstructions: TransactionInstruction[] = [];
-  await endAuction(
+  const endAuctionInstr = await endAuction(
     new PublicKey(vault.pubkey),
-    new PublicKey(auctionManager.data.info.authority),
-    endAuctionInstructions
+    new PublicKey(auctionManager.data.info.authority)
   );
 
   const claimInstructions: Array<TransactionInstruction[]> = [];
@@ -53,7 +51,7 @@ export async function endSale({
     claimInstructions
   );
 
-  const instructions = [endAuctionInstructions, ...claimInstructions];
+  const instructions = [endAuctionInstr, ...claimInstructions];
   const signers = [[], ...claimSigners];
 
   console.log('instructions: ', instructions);

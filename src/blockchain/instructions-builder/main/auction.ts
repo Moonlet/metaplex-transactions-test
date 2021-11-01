@@ -477,9 +477,8 @@ export const decodeAuctionData = (buffer: Buffer) => {
 
 export async function createAuction(
   settings: CreateAuctionArgs,
-  creator: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  creator: StringPublicKey
+): Promise<TransactionInstruction> {
   const auctionProgramId = programIds().auction;
 
   const data = Buffer.from(serialize(AUCTION_SCHEMA, settings));
@@ -527,74 +526,18 @@ export async function createAuction(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(auctionProgramId),
-      data: data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(auctionProgramId),
+    data: data,
+  });
 }
 
-export async function startAuctionWithResource(
-  resource: StringPublicKey,
-  creator: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
-  const auctionProgramId = programIds().auction;
-
-  const data = Buffer.from(
-    serialize(
-      AUCTION_SCHEMA,
-      new StartAuctionArgs({
-        resource,
-      })
-    )
-  );
-
-  const auctionKey: StringPublicKey = (
-    await findProgramAddress(
-      [
-        Buffer.from(AUCTION_PREFIX),
-        toPublicKey(auctionProgramId).toBuffer(),
-        toPublicKey(resource).toBuffer(),
-      ],
-      toPublicKey(auctionProgramId)
-    )
-  )[0];
-
-  const keys = [
-    {
-      pubkey: toPublicKey(creator),
-      isSigner: false,
-      isWritable: true,
-    },
-    {
-      pubkey: toPublicKey(auctionKey),
-      isSigner: false,
-      isWritable: true,
-    },
-    {
-      pubkey: SYSVAR_CLOCK_PUBKEY,
-      isSigner: false,
-      isWritable: false,
-    },
-  ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(auctionProgramId),
-      data: data,
-    })
-  );
-}
-
-export async function setAuctionAuthority(
+export function setAuctionAuthority(
   auction: StringPublicKey,
   currentAuthority: StringPublicKey,
-  newAuthority: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  newAuthority: StringPublicKey
+): TransactionInstruction {
   const auctionProgramId = programIds().auction;
 
   const data = Buffer.from(serialize(AUCTION_SCHEMA, new SetAuthorityArgs()));
@@ -616,13 +559,11 @@ export async function setAuctionAuthority(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(auctionProgramId),
-      data: data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(auctionProgramId),
+    data: data,
+  });
 }
 
 export async function placeBid(
@@ -633,9 +574,8 @@ export async function placeBid(
   transferAuthority: StringPublicKey,
   payer: StringPublicKey,
   resource: StringPublicKey,
-  amount: BN,
-  instructions: TransactionInstruction[]
-) {
+  amount: BN
+): Promise<TransactionInstruction> {
   const auctionProgramId = programIds().auction;
 
   const data = Buffer.from(
@@ -752,17 +692,11 @@ export async function placeBid(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(auctionProgramId),
-      data: data,
-    })
-  );
-
-  return {
-    amount,
-  };
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(auctionProgramId),
+    data: data,
+  });
 }
 
 export async function getBidderPotKey({
@@ -812,9 +746,8 @@ export async function cancelBid(
   bidderTokenPubkey: StringPublicKey,
   bidderPotTokenPubkey: StringPublicKey,
   tokenMintPubkey: StringPublicKey,
-  resource: StringPublicKey,
-  instructions: TransactionInstruction[]
-) {
+  resource: StringPublicKey
+): Promise<TransactionInstruction> {
   const auctionProgramId = programIds().auction;
 
   const data = Buffer.from(
@@ -920,13 +853,11 @@ export async function cancelBid(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(auctionProgramId),
-      data: data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(auctionProgramId),
+    data: data,
+  });
 }
 
 export const AUCTION_SCHEMA = new Map<any, any>([

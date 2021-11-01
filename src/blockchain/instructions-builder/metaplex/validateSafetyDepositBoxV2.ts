@@ -25,12 +25,11 @@ export async function validateSafetyDepositBoxV2(
   auctionManagerAuthority: StringPublicKey,
   metadataAuthority: StringPublicKey,
   payer: StringPublicKey,
-  instructions: TransactionInstruction[],
   edition: StringPublicKey,
   whitelistedCreator: StringPublicKey | undefined,
   store: StringPublicKey,
   safetyDepositConfig: SafetyDepositConfig
-) {
+): Promise<TransactionInstruction> {
   const PROGRAM_IDS = programIds();
 
   const { auctionKey, auctionManagerKey } = await getAuctionKeys(vault);
@@ -146,11 +145,9 @@ export async function validateSafetyDepositBoxV2(
     },
   ];
 
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(PROGRAM_IDS.metaplex),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(PROGRAM_IDS.metaplex),
+    data,
+  });
 }

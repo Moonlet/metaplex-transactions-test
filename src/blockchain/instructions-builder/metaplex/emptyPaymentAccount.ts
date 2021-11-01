@@ -5,13 +5,12 @@ import {
 } from '@solana/web3.js';
 import { serialize } from 'borsh';
 import {
-  getSafetyDepositConfig,
-  getAuctionWinnerTokenTypeTracker,
   EmptyPaymentAccountArgs,
-  SCHEMA,
+  getAuctionWinnerTokenTypeTracker,
   getPayoutTicket,
+  getSafetyDepositConfig,
+  SCHEMA,
 } from '../..';
-
 import { programIds, StringPublicKey, toPublicKey } from '../../utils';
 
 export async function emptyPaymentAccount(
@@ -27,9 +26,8 @@ export async function emptyPaymentAccount(
   recipient: StringPublicKey,
   winningConfigIndex: number | null,
   winningConfigItemIndex: number | null,
-  creatorIndex: number | null,
-  instructions: TransactionInstruction[]
-) {
+  creatorIndex: number | null
+): Promise<TransactionInstruction> {
   const PROGRAM_IDS = programIds();
   const store = PROGRAM_IDS.store;
   if (!store) {
@@ -145,11 +143,9 @@ export async function emptyPaymentAccount(
     },
   ];
 
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(PROGRAM_IDS.metaplex),
-      data,
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(PROGRAM_IDS.metaplex),
+    data,
+  });
 }

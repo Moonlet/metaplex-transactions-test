@@ -585,7 +585,7 @@ async function setupAuctionManagerInstructions(
     maxRanges = 10;
   }
 
-  await initAuctionManagerV2(
+  const initAuctionInstr = await initAuctionManagerV2(
     vault,
     wallet.publicKey.toBase58(),
     wallet.publicKey.toBase58(),
@@ -595,9 +595,9 @@ async function setupAuctionManagerInstructions(
     auctionSettings.winners.usize.toNumber() >= 254
       ? TupleNumericType.U16
       : TupleNumericType.U8,
-    new BN(maxRanges),
-    instructions
+    new BN(maxRanges)
   );
+  instructions.push(initAuctionInstr);
 
   return { instructions, signers, auctionManager: auctionManagerKey };
 }
@@ -614,7 +614,11 @@ async function setupStartAuction(
   const signers: Keypair[] = [];
   const instructions: TransactionInstruction[] = [];
 
-  await startAuction(vault, wallet.publicKey.toBase58(), instructions);
+  const startAuctionInstr = await startAuction(
+    vault,
+    wallet.publicKey.toBase58()
+  );
+  instructions.push(startAuctionInstr);
 
   return { instructions, signers };
 }
@@ -764,7 +768,7 @@ async function validateBoxes(
         )
       : undefined;
 
-    await validateSafetyDepositBoxV2(
+    const validateBoxInstr = await validateSafetyDepositBoxV2(
       vault,
       safetyDeposits[i].draft.metadata.pubkey,
       safetyDepositBox,
@@ -776,12 +780,12 @@ async function validateBoxes(
       wallet.publicKey.toBase58(),
       wallet.publicKey.toBase58(),
       wallet.publicKey.toBase58(),
-      tokenInstructions,
       edition,
       whitelistedCreator,
       store,
       safetyDeposits[i].config
     );
+    tokenInstructions.push(validateBoxInstr);
 
     signers.push(tokenSigners);
     instructions.push(tokenInstructions);
@@ -815,13 +819,13 @@ async function deprecatedBuildAndPopulateOneTimeAuthorizationAccount(
   )[0];
 
   if (!(await connection.getAccountInfo(toPublicKey(recipientKey)))) {
-    createAssociatedTokenAccountInstruction(
-      instructions,
+    const createTokenInstr = createAssociatedTokenAccountInstruction(
       toPublicKey(recipientKey),
       wallet.publicKey,
       wallet.publicKey,
       toPublicKey(oneTimePrintingAuthorizationMint)
     );
+    instructions.push(createTokenInstr);
   }
 
   instructions.push(

@@ -23,9 +23,8 @@ export async function initAuctionManagerV2(
   store: StringPublicKey,
   amountType: TupleNumericType,
   lengthType: TupleNumericType,
-  maxRanges: BN,
-  instructions: TransactionInstruction[]
-) {
+  maxRanges: BN
+): Promise<TransactionInstruction> {
   const PROGRAM_IDS = programIds();
   const { auctionKey, auctionManagerKey } = await getAuctionKeys(vault);
 
@@ -94,11 +93,10 @@ export async function initAuctionManagerV2(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: toPublicKey(PROGRAM_IDS.metaplex),
-      data,
-    })
-  );
+
+  return new TransactionInstruction({
+    keys,
+    programId: toPublicKey(PROGRAM_IDS.metaplex),
+    data,
+  });
 }

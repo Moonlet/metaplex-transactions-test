@@ -143,7 +143,7 @@ export async function setupPlaceBid(
   signers.push(transferAuthority);
 
   const bid = new BN(lamports - accountRentExempt);
-  await placeBid(
+  const placeBidInstr = await placeBid(
     wallet.publicKey.toBase58(),
     payingSolAccount,
     bidderPotTokenAccount,
@@ -151,9 +151,9 @@ export async function setupPlaceBid(
     transferAuthority.publicKey.toBase58(),
     wallet.publicKey.toBase58(),
     auctionView.auctionManager.data.info.vault,
-    bid,
-    instructions
+    bid
   );
+  instructions.push(placeBidInstr);
 
   overallInstructions.push([...instructions, ...cleanupInstructions]);
   overallSigners.push(signers);

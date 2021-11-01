@@ -14,6 +14,7 @@ import {
   WRAPPED_SOL_MINT,
 } from '../../utils/ids';
 import { programIds } from '../../utils/programIds';
+import { IAccountBuilder } from '../..';
 
 export interface TokenAccount {
   pubkey: string;
@@ -21,12 +22,14 @@ export interface TokenAccount {
   info: TokenAccountInfo;
 }
 
+// todo: could combine with createUninitializedAccount
 export function createUninitializedMint(
-  instructions: TransactionInstruction[],
   payer: PublicKey,
-  amount: number,
-  signers: Keypair[]
-) {
+  amount: number
+): IAccountBuilder {
+  const instructions: TransactionInstruction[] = [];
+  const signers: Keypair[] = [];
+
   const account = Keypair.generate();
   instructions.push(
     SystemProgram.createAccount({
@@ -40,15 +43,20 @@ export function createUninitializedMint(
 
   signers.push(account);
 
-  return account.publicKey;
+  return {
+    instructions,
+    signers,
+    account: account.publicKey,
+  };
 }
 
 export function createUninitializedAccount(
-  instructions: TransactionInstruction[],
   payer: PublicKey,
-  amount: number,
-  signers: Keypair[]
-) {
+  amount: number
+): IAccountBuilder {
+  const instructions: TransactionInstruction[] = [];
+  const signers: Keypair[] = [];
+
   const account = Keypair.generate();
   instructions.push(
     SystemProgram.createAccount({
@@ -62,16 +70,19 @@ export function createUninitializedAccount(
 
   signers.push(account);
 
-  return account.publicKey;
+  return {
+    instructions,
+    signers,
+    account: account.publicKey,
+  };
 }
 
 export function createAssociatedTokenAccountInstruction(
-  instructions: TransactionInstruction[],
   associatedTokenAddress: PublicKey,
   payer: PublicKey,
   walletAddress: PublicKey,
   splTokenMintAddress: PublicKey
-) {
+): TransactionInstruction {
   const keys = [
     {
       pubkey: payer,
@@ -109,42 +120,36 @@ export function createAssociatedTokenAccountInstruction(
       isWritable: false,
     },
   ];
-  instructions.push(
-    new TransactionInstruction({
-      keys,
-      programId: SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
-      data: Buffer.from([]),
-    })
-  );
+  return new TransactionInstruction({
+    keys,
+    programId: SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+    data: Buffer.from([]),
+  });
 }
 
 export function createMint(
-  instructions: TransactionInstruction[],
   payer: PublicKey,
   mintRentExempt: number,
   decimals: number,
   owner: PublicKey,
-  freezeAuthority: PublicKey,
-  signers: Keypair[]
-) {
-  const account = createUninitializedMint(
-    instructions,
+  freezeAuthority: PublicKey
+): IAccountBuilder {
+  const accountBuilder: IAccountBuilder = createUninitializedMint(
     payer,
-    mintRentExempt,
-    signers
+    mintRentExempt
   );
 
-  instructions.push(
+  accountBuilder.instructions.push(
     Token.createInitMintInstruction(
       TOKEN_PROGRAM_ID,
-      account,
+      accountBuilder.account,
       decimals,
       owner,
       freezeAuthority
     )
   );
 
-  return account;
+  return accountBuilder;
 }
 
 export function createTokenAccount(
@@ -155,18 +160,21 @@ export function createTokenAccount(
   owner: PublicKey,
   signers: Keypair[]
 ) {
-  const account = createUninitializedAccount(
-    instructions,
-    payer,
-    accountRentExempt,
-    signers
-  );
+  const accBuilder = createUninitializedAccount(payer, accountRentExempt);
+  // todo: partial, replace
+  instructions.push(...accBuilder.instructions);
+  signers.push(...accBuilder.signers);
 
   instructions.push(
-    Token.createInitAccountInstruction(TOKEN_PROGRAM_ID, mint, account, owner)
+    Token.createInitAccountInstruction(
+      TOKEN_PROGRAM_ID,
+      mint,
+      accBuilder.account,
+      owner
+    )
   );
 
-  return account;
+  return accBuilder.account; //todo: return accBuilder
 }
 
 export function ensureWrappedAccount(
