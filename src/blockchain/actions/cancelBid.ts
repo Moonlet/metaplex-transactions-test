@@ -1,4 +1,3 @@
-import { ITransactionBuilder } from './../models/types';
 import { AccountLayout, MintInfo } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
 import {
@@ -7,9 +6,6 @@ import {
   ensureWrappedAccount,
   ParsedAccount,
   PartialAuctionView,
-  sendTransactions,
-  sendTransactionWithRetry,
-  SequenceType,
   StringPublicKey,
   TokenAccount,
   toPublicKey,
@@ -17,6 +13,10 @@ import {
 } from '..';
 import mintMock from '../../mock/cache/mintMock';
 import tokenAccountMock from '../../mock/cache/tokenAccountMock';
+import {
+  ITransactionBuilder,
+  ITransactionBuilderBatch,
+} from './../models/types';
 import { claimUnusedPrizes } from './claimUnusedPrizes';
 import { setupPlaceBid } from './sendPlaceBid';
 
@@ -88,7 +88,7 @@ export async function sendCancelBid(
   // bids: ParsedAccount<BidderMetadata>[],
   // bidRedemptions: Record<string, ParsedAccount<BidRedemptionTicket>>,
   // prizeTrackingTickets: Record<string, ParsedAccount<PrizeTrackingTicket>>
-) {
+): Promise<ITransactionBuilderBatch> {
   if (!wallet.publicKey) throw new Error();
 
   const signers: Array<Keypair[]> = [];
@@ -134,21 +134,8 @@ export async function sendCancelBid(
     instructions.push(...claimInstr);
     signers.push(...claimSigners);
   }
-
-  instructions.length === 1
-    ? await sendTransactionWithRetry(
-        connection,
-        wallet,
-        instructions[0],
-        signers[0],
-        'single'
-      )
-    : await sendTransactions(
-        connection,
-        wallet,
-        instructions,
-        signers,
-        SequenceType.StopOnFailure,
-        'single'
-      );
+  return {
+    instructions,
+    signers,
+  };
 }
