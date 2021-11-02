@@ -1,3 +1,4 @@
+import { ITransactionBuilder } from './../models/types';
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 import { AccountLayout } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
@@ -75,15 +76,10 @@ export async function sendRedeemBid(
     auctionView.auction.data.info.state !== AuctionState.Ended
   ) {
     // but whyyy???? (same for settle function)
-    await setupPlaceBid(
-      connection,
-      wallet,
-      payingAccount,
-      auctionView,
-      0,
-      instructions,
-      signers
-    );
+    const { instructions: placeBidInstr, signers: placeBidSigners } =
+      await setupPlaceBid(connection, wallet, payingAccount, auctionView, 0);
+    instructions.push(placeBidInstr);
+    signers.push(placeBidSigners);
   }
 
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
@@ -148,17 +144,18 @@ export async function sendRedeemBid(
         case WinningConfigType.FullRightsTransfer:
           // one this will remain
           console.log('Redeeming Full Rights');
-          await setupRedeemFullRightsTransferInstructions(
-            auctionView,
-            // accountsByMint,
-            accountRentExempt,
-            wallet,
-            safetyDeposit,
-            item,
-            winnerIndex,
-            signers,
-            instructions
-          );
+          const { instructions: redeemInstr, signers: redeemSigners } =
+            await setupRedeemFullRightsTransferInstructions(
+              auctionView,
+              // accountsByMint,
+              accountRentExempt,
+              wallet,
+              safetyDeposit,
+              item,
+              winnerIndex
+            );
+          instructions.push(redeemInstr);
+          signers.push(redeemSigners);
           break;
         // case WinningConfigType.TokenOnlyTransfer:
         //   console.log('Redeeming Token only');
@@ -194,13 +191,10 @@ export async function sendRedeemBid(
     }
   } else {
     // If you didnt win, you must have a bid we can refund before we check for open editions.
-    await setupCancelBid(
-      auctionView,
-      accountRentExempt,
-      wallet,
-      signers,
-      instructions
-    );
+    const { signers: cancelSigners, instructions: cancelInstr } =
+      await setupCancelBid(auctionView, accountRentExempt, wallet);
+    signers.push(cancelSigners);
+    instructions.push(cancelInstr);
   }
 
   // participationItem = undefined !!!
@@ -346,17 +340,12 @@ async function setupRedeemFullRightsTransferInstructions(
   wallet: WalletSigner,
   safetyDeposit: ParsedAccount<SafetyDepositBox>,
   item: AuctionViewItem,
-  winnerIndex: number,
-  signers: Array<Keypair[]>,
-  instructions: Array<TransactionInstruction[]>
-) {
+  winnerIndex: number
+): Promise<ITransactionBuilder> {
   if (!wallet.publicKey) throw new Error();
 
   const winningPrizeSigner: Keypair[] = [];
   const winningPrizeInstructions: TransactionInstruction[] = [];
-
-  signers.push(winningPrizeSigner);
-  instructions.push(winningPrizeInstructions);
 
   const claimed = auctionView.auctionManager.data.info.isItemClaimed(
     winnerIndex,
@@ -411,6 +400,10 @@ async function setupRedeemFullRightsTransferInstructions(
     );
     winningPrizeInstructions.push(updatePrimaryInstr);
   }
+  return {
+    instructions: winningPrizeInstructions,
+    signers: winningPrizeSigner,
+  };
 }
 
 // export async function setupRedeemPrintingV2Instructions(

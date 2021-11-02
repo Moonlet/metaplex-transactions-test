@@ -15,6 +15,7 @@ import {
   toPublicKey,
   WalletSigner,
   QUOTE_MINT,
+  ITransactionBuilderBatch,
 } from '..';
 import { setupPlaceBid } from './sendPlaceBid';
 
@@ -36,15 +37,10 @@ export async function settle(
     auctionView.auction.data.info.ended() &&
     auctionView.auction.data.info.state !== AuctionState.Ended
   ) {
-    await setupPlaceBid(
-      connection,
-      wallet,
-      payingAccount,
-      auctionView,
-      0,
-      instructions,
-      signers
-    );
+    const { instructions: placeBidInstr, signers: placeBidSigners } =
+      await setupPlaceBid(connection, wallet, payingAccount, auctionView, 0);
+    instructions.push(placeBidInstr);
+    signers.push(placeBidSigners);
 
     // await sendTransactionWithRetry(
     //   connection,
@@ -54,21 +50,19 @@ export async function settle(
     // );
   }
 
-  await claimAllBids(
-    connection,
-    wallet,
-    auctionView,
-    bidsToClaim,
-    signers,
-    instructions
-  );
-  await emptyPaymentAccountForAllTokens(
-    connection,
-    wallet,
-    auctionView,
-    signers,
-    instructions
-  );
+  // claim instructions
+  const { instructions: claimInstr, signers: claimSigners } =
+    await claimAllBids(connection, wallet, auctionView, bidsToClaim);
+
+  instructions.push(...claimInstr);
+  signers.push(...claimSigners);
+
+  // empty payment accounts
+  const { instructions: emptyPaymentInstr, signers: emptyPaymentSigners } =
+    await emptyPaymentAccountForAllTokens(connection, wallet, auctionView);
+
+  instructions.push(...emptyPaymentInstr);
+  signers.push(...emptyPaymentSigners);
 
   return [instructions, signers];
 }
@@ -76,15 +70,16 @@ export async function settle(
 async function emptyPaymentAccountForAllTokens(
   connection: Connection,
   wallet: WalletSigner,
-  auctionView: PartialAuctionView,
-  currSignerBatch: Keypair[][],
-  currInstrBatch: TransactionInstruction[][]
-): Promise<[TransactionInstruction[][], Keypair[][]]> {
+  auctionView: PartialAuctionView
+): Promise<ITransactionBuilderBatch> {
   if (!wallet.publicKey) throw new Error();
 
   const PROGRAM_IDS = programIds();
   // const signers: Array<Array<Keypair[]>> = [];
   // const instructions: Array<Array<TransactionInstruction[]>> = [];
+
+  const currSignerBatch: Keypair[][] = [];
+  const currInstrBatch: TransactionInstruction[][] = [];
 
   let settleSigners: Keypair[] = [];
   let settleInstructions: TransactionInstruction[] = [];
@@ -195,7 +190,7 @@ async function emptyPaymentAccountForAllTokens(
   //   instructions.push(currInstrBatch);
   // }
 
-  return [currInstrBatch, currSignerBatch];
+  return { instructions: currInstrBatch, signers: currSignerBatch };
 
   // for (let i = 0; i < instructions.length; i++) {
   //   const instructionBatch = instructions[i];
@@ -225,12 +220,13 @@ async function claimAllBids(
   connection: Connection,
   wallet: WalletSigner,
   auctionView: PartialAuctionView,
-  bids: ParsedAccount<BidderPot>[],
-  currSignerBatch: Keypair[][],
-  currInstrBatch: TransactionInstruction[][]
-): Promise<[TransactionInstruction[][], Keypair[][]]> {
+  bids: ParsedAccount<BidderPot>[]
+): Promise<ITransactionBuilderBatch> {
   // const signers: Array<Array<Keypair[]>> = [];
   // const instructions: Array<Array<TransactionInstruction[]>> = [];
+
+  const currSignerBatch: Keypair[][] = [];
+  const currInstrBatch: TransactionInstruction[][] = [];
 
   let claimBidSigners: Keypair[] = []; // every time is [] ?
   let claimBidInstructions: TransactionInstruction[] = [];
@@ -281,7 +277,7 @@ async function claimAllBids(
   //   instructions.push(currInstrBatch);
   // }
 
-  return [currInstrBatch, currSignerBatch];
+  return { instructions: currInstrBatch, signers: currSignerBatch };
   // return;
   // for (let i = 0; i < instructions.length; i++) {
   //   const instructionBatch = instructions[i];

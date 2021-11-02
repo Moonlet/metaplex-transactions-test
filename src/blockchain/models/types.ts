@@ -145,6 +145,10 @@ export interface ITransactionBuilder {
   instructions: TransactionInstruction[];
   signers: Keypair[];
 }
+export interface ITransactionBuilderBatch {
+  instructions: TransactionInstruction[][];
+  signers: Keypair[][];
+}
 
 export interface IAccountBuilder extends ITransactionBuilder {
   account: PublicKey;

@@ -1,3 +1,4 @@
+import { ITransactionBuilder } from './../models/types';
 import { AccountLayout, MintInfo } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
 import {
@@ -38,28 +39,20 @@ export async function sendCancelBid(
     auctionView.auction.data.info.ended() &&
     auctionView.auction.data.info.state !== AuctionState.Ended
   ) {
-    await setupPlaceBid(
-      connection,
-      wallet,
-      payingAccount,
-      auctionView,
-      0,
-      instructions,
-      signers
-    );
+    const { instructions: placeBidInstr, signers: placeBidSigners } =
+      await setupPlaceBid(connection, wallet, payingAccount, auctionView, 0);
+    instructions.push(placeBidInstr);
+    signers.push(placeBidSigners);
   }
 
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
     AccountLayout.span
   );
 
-  await setupCancelBid(
-    auctionView,
-    accountRentExempt,
-    wallet,
-    signers,
-    instructions
-  );
+  const { signers: cancelSigners, instructions: cancelInstr } =
+    await setupCancelBid(auctionView, accountRentExempt, wallet);
+  signers.push(cancelSigners);
+  instructions.push(cancelInstr);
 
   if (
     wallet.publicKey.equals(
@@ -98,19 +91,19 @@ export async function sendCancelBid(
         'single'
       );
 }
-
 export async function setupCancelBid(
   auctionView: PartialAuctionView,
   accountRentExempt: number,
-  wallet: WalletSigner,
-  signers: Array<Keypair[]>,
-  instructions: Array<TransactionInstruction[]>
-) {
+  wallet: WalletSigner
+): Promise<ITransactionBuilder> {
   if (!wallet.publicKey) throw new Error();
 
   const cancelSigners: Keypair[] = [];
   const cancelInstructions: TransactionInstruction[] = [];
   const cleanupInstructions: TransactionInstruction[] = [];
+
+  const finalInstructions: TransactionInstruction[] = [];
+  const finaSigners: Keypair[] = [];
 
   // ~~~~~~~GET REAL DATA ~~~~~~~
   // const tokenAccount = accountsByMint.get(
@@ -148,7 +141,11 @@ export async function setupCancelBid(
     );
     cancelInstructions.push(cancelBidInstr);
 
-    signers.push(cancelSigners);
-    instructions.push([...cancelInstructions, ...cleanupInstructions]);
+    finaSigners.push(...cancelSigners);
+    finalInstructions.push(...[...cancelInstructions, ...cleanupInstructions]);
   }
+  return {
+    instructions: finalInstructions,
+    signers: finaSigners,
+  };
 }

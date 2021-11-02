@@ -1,3 +1,4 @@
+import { ITransactionBuilder } from './../models/types';
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 import { AccountLayout, MintInfo } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
@@ -28,15 +29,16 @@ export async function sendPlaceBid(
 ): Promise<[TransactionInstruction[][], Keypair[][]]> {
   const signers: Keypair[][] = [];
   const instructions: TransactionInstruction[][] = [];
-  const bid = await setupPlaceBid(
-    connection,
-    wallet,
-    bidderTokenAccount,
-    auctionView,
-    amount,
-    instructions,
-    signers
-  );
+  const { instructions: placeBidInstr, signers: placeBidSigners } =
+    await setupPlaceBid(
+      connection,
+      wallet,
+      bidderTokenAccount,
+      auctionView,
+      amount
+    );
+  instructions.push(placeBidInstr);
+  signers.push(placeBidSigners);
 
   return [instructions, signers];
 
@@ -61,15 +63,16 @@ export async function setupPlaceBid(
 
   // value entered by the user adjust to decimals of the mint
   // If BN, then assume instant sale and decimals already adjusted.
-  amount: number | BN,
-  overallInstructions: TransactionInstruction[][],
-  overallSigners: Keypair[][]
-): Promise<BN> {
+  amount: number | BN
+): Promise<ITransactionBuilder & { bid: BN }> {
   if (!wallet.publicKey) throw new Error();
 
   let signers: Keypair[] = [];
   let instructions: TransactionInstruction[] = [];
   const cleanupInstructions: TransactionInstruction[] = [];
+
+  const finalInstructions: TransactionInstruction[] = [];
+  const finaSigners: Keypair[] = [];
 
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
     AccountLayout.span
@@ -114,17 +117,10 @@ export async function setupPlaceBid(
   } else {
     bidderPotTokenAccount = auctionView.myBidderPot?.data.info.bidderPot;
     if (!auctionView.auction.data.info.ended()) {
-      const cancelSigners: Keypair[][] = [];
-      const cancelInstr: TransactionInstruction[][] = [];
-      await setupCancelBid(
-        auctionView,
-        accountRentExempt,
-        wallet,
-        cancelSigners,
-        cancelInstr
-      );
-      signers = [...signers, ...cancelSigners[0]];
-      instructions = [...cancelInstr[0], ...instructions];
+      const { signers: cancelSigners, instructions: cancelInstr } =
+        await setupCancelBid(auctionView, accountRentExempt, wallet);
+      signers = [...signers, ...cancelSigners];
+      instructions = [...cancelInstr, ...instructions];
     }
   }
 
@@ -171,7 +167,12 @@ export async function setupPlaceBid(
   );
   instructions.push(placeBidInstr);
 
-  overallInstructions.push([...instructions, ...cleanupInstructions]);
-  overallSigners.push(signers);
-  return bid;
+  finaSigners.push(...signers);
+  finalInstructions.push(...[...instructions, ...cleanupInstructions]);
+
+  return {
+    instructions: finalInstructions,
+    signers: finaSigners,
+    bid,
+  };
 }
