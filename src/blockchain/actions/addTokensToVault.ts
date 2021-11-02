@@ -1,23 +1,22 @@
-import { Keypair, Connection, TransactionInstruction } from '@solana/web3.js';
+import { AccountLayout } from '@solana/spl-token';
+import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
+import BN from 'bn.js';
 import {
-  utils,
-  findProgramAddress,
-  MetadataKey,
-  StringPublicKey,
-  toPublicKey,
-  WalletSigner,
-  SafetyDepositConfig,
+  addTokenToInactiveVault,
   approve,
   createTokenAccount,
-  addTokenToInactiveVault,
-  VAULT_PREFIX,
-  ITransactionBuilder,
+  findProgramAddress,
   ITransactionBuilderBatch,
+  MetadataKey,
+  SafetyDepositConfig,
+  StringPublicKey,
+  toPublicKey,
+  utils,
+  VAULT_PREFIX,
+  WalletSigner,
 } from '..';
-
-import { AccountLayout } from '@solana/spl-token';
-import BN from 'bn.js';
 import { SafetyDepositDraft } from './createAuctionManager';
+
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 
 export interface SafetyDepositInstructionTemplate {

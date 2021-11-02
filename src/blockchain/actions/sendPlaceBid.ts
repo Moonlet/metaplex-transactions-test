@@ -1,4 +1,7 @@
-import { ITransactionBuilder } from './../models/types';
+import {
+  ITransactionBuilder,
+  ITransactionBuilderBatch,
+} from './../models/types';
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 import { AccountLayout, MintInfo } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
@@ -26,7 +29,7 @@ export async function sendPlaceBid(
   auctionView: PartialAuctionView,
   // value entered by the user adjust to decimals of the mint
   amount: number | BN
-): Promise<[TransactionInstruction[][], Keypair[][]]> {
+): Promise<ITransactionBuilderBatch> {
   const signers: Keypair[][] = [];
   const instructions: TransactionInstruction[][] = [];
   const { instructions: placeBidInstr, signers: placeBidSigners } =
@@ -40,19 +43,7 @@ export async function sendPlaceBid(
   instructions.push(placeBidInstr);
   signers.push(placeBidSigners);
 
-  return [instructions, signers];
-
-  // await sendTransactionWithRetry(
-  //   connection,
-  //   wallet,
-  //   instructions[0],
-  //   signers[0],
-  //   'single',
-  // );
-
-  // return {
-  //   amount: bid,
-  // };
+  return { instructions, signers };
 }
 
 export async function setupPlaceBid(

@@ -21,7 +21,7 @@ export const placeBidWithCancelPrevious = async () => {
     connection,
     walletSinger,
     bidderAccount,
-    auctionView as any,
+    auctionView,
     amount
   );
   console.log(result);
