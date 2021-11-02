@@ -9,6 +9,7 @@ import {
   WalletSigner,
   AUCTION_PREFIX,
   createAuction,
+  ITransactionBuilder,
 } from '..';
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 
@@ -17,11 +18,11 @@ export async function makeAuction(
   wallet: WalletSigner,
   vault: StringPublicKey,
   auctionSettings: IPartialCreateAuctionArgs
-): Promise<{
-  auction: StringPublicKey;
-  instructions: TransactionInstruction[];
-  signers: Keypair[];
-}> {
+): Promise<
+  ITransactionBuilder & {
+    auction: StringPublicKey;
+  }
+> {
   if (!wallet.publicKey) throw new Error();
 
   const PROGRAM_IDS = utils.programIds();

@@ -11,6 +11,8 @@ import {
   createTokenAccount,
   addTokenToInactiveVault,
   VAULT_PREFIX,
+  ITransactionBuilder,
+  ITransactionBuilderBatch,
 } from '..';
 
 import { AccountLayout } from '@solana/spl-token';
@@ -36,11 +38,11 @@ export async function addTokensToVault(
   wallet: WalletSigner,
   vault: StringPublicKey,
   nfts: SafetyDepositInstructionTemplate[] // only one every time
-): Promise<{
-  instructions: Array<TransactionInstruction[]>;
-  signers: Array<Keypair[]>;
-  safetyDepositTokenStores: StringPublicKey[];
-}> {
+): Promise<
+  ITransactionBuilderBatch & {
+    safetyDepositTokenStores: StringPublicKey[];
+  }
+> {
   if (!wallet.publicKey) throw new Error();
 
   const PROGRAM_IDS = utils.programIds();

@@ -15,6 +15,7 @@ import {
   MAX_VAULT_SIZE,
   VAULT_PREFIX,
   createTokenAccount,
+  ITransactionBuilder,
 } from '..';
 
 import { AccountLayout, MintLayout } from '@solana/spl-token';
@@ -27,14 +28,14 @@ export async function createVault(
   wallet: WalletSigner,
   priceMint: StringPublicKey,
   externalPriceAccount: StringPublicKey
-): Promise<{
-  vault: StringPublicKey;
-  fractionalMint: StringPublicKey;
-  redeemTreasury: StringPublicKey;
-  fractionTreasury: StringPublicKey;
-  instructions: TransactionInstruction[];
-  signers: Keypair[];
-}> {
+): Promise<
+  ITransactionBuilder & {
+    vault: StringPublicKey;
+    fractionalMint: StringPublicKey;
+    redeemTreasury: StringPublicKey;
+    fractionTreasury: StringPublicKey;
+  }
+> {
   if (!wallet.publicKey) throw new Error();
 
   const PROGRAM_IDS = utils.programIds();
@@ -56,8 +57,7 @@ export async function createVault(
 
   const vault = Keypair.generate();
 
-  const vaultAuthority = // todo same here
-  (
+  const vaultAuthority = ( // todo same here
     await findProgramAddress(
       [
         Buffer.from(VAULT_PREFIX),

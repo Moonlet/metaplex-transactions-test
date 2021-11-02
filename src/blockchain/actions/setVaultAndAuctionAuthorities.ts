@@ -1,5 +1,6 @@
 import { Keypair, TransactionInstruction } from '@solana/web3.js';
 import {
+  ITransactionBuilder,
   setAuctionAuthority,
   setVaultAuthority,
   StringPublicKey,
@@ -13,10 +14,7 @@ export async function setVaultAndAuctionAuthorities(
   vault: StringPublicKey,
   auction: StringPublicKey,
   auctionManager: StringPublicKey
-): Promise<{
-  instructions: TransactionInstruction[];
-  signers: Keypair[];
-}> {
+): Promise<ITransactionBuilder> {
   if (!wallet.publicKey) throw new Error();
 
   const signers: Keypair[] = [];

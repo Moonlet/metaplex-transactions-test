@@ -8,6 +8,7 @@ import {
   activateVault,
   approve,
   combineVault,
+  ITransactionBuilder,
 } from '..';
 
 import { AccountLayout } from '@solana/spl-token';
@@ -24,10 +25,7 @@ export async function closeVault(
   redeemTreasury: StringPublicKey,
   priceMint: StringPublicKey,
   externalPriceAccount: StringPublicKey
-): Promise<{
-  instructions: TransactionInstruction[];
-  signers: Keypair[];
-}> {
+): Promise<ITransactionBuilder> {
   if (!wallet.publicKey) throw new Error();
 
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
