@@ -1,14 +1,13 @@
 import BN from 'bn.js';
 import { SafetyDepositBox } from '../../blockchain/instructions-builder/main/vault';
-import {
-  Metadata,
-  MasterEditionV2,
-  MetadataKey,
-} from '../../blockchain/instructions-builder/main/metadata';
+
 import defaultAuctionView from '../bid/auctionView';
 import {
   AuctionViewItem,
   BidderMetadata,
+  MasterEditionV2,
+  Metadata,
+  MetadataKey,
   PartialAuctionView,
 } from '../../blockchain';
 

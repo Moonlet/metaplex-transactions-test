@@ -1,13 +1,7 @@
 import { SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 import bs58 from 'bs58';
-import {
-  MasterEditionV1,
-  MasterEditionV2,
-  Metadata,
-  SafetyDepositBox,
-  Vault,
-} from '.';
+import { SafetyDepositBox, Vault } from '.';
 import {
   AuctionData,
   AuctionManagerV1,
@@ -15,6 +9,9 @@ import {
   DEPRECATED_SCHEMA,
   findProgramAddress,
   getAuctionExtended,
+  MasterEditionV1,
+  MasterEditionV2,
+  Metadata,
   METADATA,
   ParsedAccount,
   ParticipationConfigV1,
