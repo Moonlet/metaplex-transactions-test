@@ -201,7 +201,7 @@ export const sendTransactions = async (
     unsignedTxns.push(transaction);
   }
 
-  const signedTxns = await (wallet as any).signAllTransactions(unsignedTxns);
+  const signedTxns = await wallet.signAllTransactions(unsignedTxns);
 
   const pendingTxns: Promise<{ txid: string; slot: number }>[] = [];
 
@@ -528,7 +528,7 @@ export const sendTransactionWithRetry = async (
     transaction.partialSign(...signers);
   }
   if (!includesFeePayer) {
-    transaction = await (wallet as any).signTransaction(transaction);
+    transaction = await wallet.signTransaction(transaction);
   }
 
   if (beforeSend) {
