@@ -11,14 +11,11 @@ import {
   BidderPot,
   BidderMetadata,
   AuctionDataExtended,
-} from '..';
-import {
   AuctionManager,
   AuctionViewItem,
   BidRedemptionTicket,
-  SafetyDepositBox,
-  Vault,
-} from '../instructions-builder/main';
+} from '..';
+import { SafetyDepositBox, Vault } from '../instructions-builder/main';
 import { StringPublicKey } from '../utils';
 
 export interface ParsedAccountBase {
