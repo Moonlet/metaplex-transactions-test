@@ -1,8 +1,3 @@
-import {
-  ParticipationConfigV1,
-  DEPRECATED_SCHEMA,
-  AuctionManagerV1,
-} from './deprecated';
 import { SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 import bs58 from 'bs58';
@@ -11,6 +6,7 @@ import {
   AUCTION_PREFIX,
   findProgramAddress,
   getAuctionExtended,
+  MasterEditionV1,
   MasterEditionV2,
   Metadata,
   METADATA,
@@ -20,8 +16,12 @@ import {
   StringPublicKey,
   toPublicKey,
   Vault,
-  MasterEditionV1,
 } from '..';
+import {
+  AuctionManagerV1,
+  DEPRECATED_SCHEMA,
+  ParticipationConfigV1,
+} from './deprecated';
 
 export const METAPLEX_PREFIX = 'metaplex';
 export const INDEX = 'index';

@@ -1,10 +1,9 @@
-import { TransactionInstruction } from '@solana/web3.js';
 import BN from 'bn.js';
 import {
+  findProgramAddress,
+  programIds,
   StringPublicKey,
   toPublicKey,
-  programIds,
-  findProgramAddress,
 } from '..';
 export const METADATA_PREFIX = 'metadata';
 export const EDITION = 'edition';
