@@ -280,64 +280,64 @@ export async function sendRedeemBid(
   // );
 }
 
-async function setupRedeemInstructions(
-  auctionView: AuctionView,
-  accountsByMint: Map<string, TokenAccount>,
-  accountRentExempt: number,
-  wallet: WalletSigner,
-  safetyDeposit: ParsedAccount<SafetyDepositBox>,
-  winnerIndex: number,
-  signers: Array<Keypair[]>,
-  instructions: Array<TransactionInstruction[]>
-) {
-  if (!wallet.publicKey) throw new Error();
+// async function setupRedeemInstructions(
+//   auctionView: AuctionView,
+//   accountsByMint: Map<string, TokenAccount>,
+//   accountRentExempt: number,
+//   wallet: WalletSigner,
+//   safetyDeposit: ParsedAccount<SafetyDepositBox>,
+//   winnerIndex: number,
+//   signers: Array<Keypair[]>,
+//   instructions: Array<TransactionInstruction[]>
+// ) {
+//   if (!wallet.publicKey) throw new Error();
 
-  const winningPrizeSigner: Keypair[] = [];
-  const winningPrizeInstructions: TransactionInstruction[] = [];
+//   const winningPrizeSigner: Keypair[] = [];
+//   const winningPrizeInstructions: TransactionInstruction[] = [];
 
-  signers.push(winningPrizeSigner);
-  instructions.push(winningPrizeInstructions);
-  const claimed = auctionView.auctionManager.isItemClaimed(
-    winnerIndex,
-    safetyDeposit.info.order
-  );
-  if (!claimed && auctionView.myBidderMetadata) {
-    let newTokenAccount = accountsByMint.get(
-      safetyDeposit.info.tokenMint
-    )?.pubkey;
-    if (!newTokenAccount)
-      newTokenAccount = createTokenAccount(
-        winningPrizeInstructions,
-        wallet.publicKey,
-        accountRentExempt,
-        toPublicKey(safetyDeposit.info.tokenMint),
-        wallet.publicKey,
-        winningPrizeSigner
-      ).toBase58();
+//   signers.push(winningPrizeSigner);
+//   instructions.push(winningPrizeInstructions);
+//   const claimed = auctionView.auctionManager.isItemClaimed(
+//     winnerIndex,
+//     safetyDeposit.info.order
+//   );
+//   if (!claimed && auctionView.myBidderMetadata) {
+//     let newTokenAccount = accountsByMint.get(
+//       safetyDeposit.info.tokenMint
+//     )?.pubkey;
+//     if (!newTokenAccount)
+//       newTokenAccount = createTokenAccount(
+//         winningPrizeInstructions,
+//         wallet.publicKey,
+//         accountRentExempt,
+//         toPublicKey(safetyDeposit.info.tokenMint),
+//         wallet.publicKey,
+//         winningPrizeSigner
+//       ).toBase58();
 
-    const redeemInstr = await redeemBid(
-      auctionView.auctionManager.vault,
-      safetyDeposit.info.store,
-      newTokenAccount,
-      safetyDeposit.pubkey,
-      auctionView.vault.info.fractionMint,
-      auctionView.myBidderMetadata.info.bidderPubkey,
-      wallet.publicKey.toBase58(),
-      undefined,
-      undefined,
-      false
-    );
-    winningPrizeInstructions.push(redeemInstr);
+//     const redeemInstr = await redeemBid(
+//       auctionView.auctionManager.vault,
+//       safetyDeposit.info.store,
+//       newTokenAccount,
+//       safetyDeposit.pubkey,
+//       auctionView.vault.info.fractionMint,
+//       auctionView.myBidderMetadata.info.bidderPubkey,
+//       wallet.publicKey.toBase58(),
+//       undefined,
+//       undefined,
+//       false
+//     );
+//     winningPrizeInstructions.push(redeemInstr);
 
-    const metadata = await getMetadata(safetyDeposit.info.tokenMint);
-    const primatySaleInstr = updatePrimarySaleHappenedViaToken(
-      metadata,
-      wallet.publicKey.toBase58(),
-      newTokenAccount
-    );
-    winningPrizeInstructions.push(primatySaleInstr);
-  }
-}
+//     const metadata = await getMetadata(safetyDeposit.info.tokenMint);
+//     const primatySaleInstr = updatePrimarySaleHappenedViaToken(
+//       metadata,
+//       wallet.publicKey.toBase58(),
+//       newTokenAccount
+//     );
+//     winningPrizeInstructions.push(primatySaleInstr);
+//   }
+// }
 
 async function setupRedeemFullRightsTransferInstructions(
   auctionView: PartialAuctionView,
@@ -373,15 +373,21 @@ async function setupRedeemFullRightsTransferInstructions(
     // ~~~~~ REPLACE THIS ~~~~~~
     let newTokenAccount = safetyDepositAccount.pubkey;
 
-    if (!newTokenAccount)
-      newTokenAccount = createTokenAccount(
-        winningPrizeInstructions,
+    if (!newTokenAccount) {
+      const {
+        account: tokenAcc,
+        instructions: builderInstr,
+        signers: builderSigners,
+      } = createTokenAccount(
         wallet.publicKey,
         accountRentExempt,
         toPublicKey(safetyDeposit.info.tokenMint),
-        wallet.publicKey,
-        winningPrizeSigner
-      ).toBase58();
+        wallet.publicKey
+      );
+      winningPrizeInstructions.push(...builderInstr);
+      winningPrizeSigner.push(...builderSigners);
+      newTokenAccount = tokenAcc.toBase58();
+    }
 
     const redeemFullInstr = await redeemFullRightsTransferBid(
       auctionView.auctionManager.data.info.vault,

@@ -123,14 +123,21 @@ export async function setupCancelBid(
   const mint = mintMock as any as ParsedAccount<MintInfo>;
 
   if (mint && auctionView.myBidderPot) {
-    const receivingSolAccount = ensureWrappedAccount(
-      cancelInstructions,
-      cleanupInstructions,
+    const wrappedAccBuilder = ensureWrappedAccount(
       tokenAccount,
       wallet.publicKey,
-      accountRentExempt,
-      cancelSigners
+      accountRentExempt
     );
+
+    let receivingSolAccount;
+    if (typeof wrappedAccBuilder !== 'string') {
+      cancelInstructions.push(...wrappedAccBuilder.instructions);
+      cleanupInstructions.push(...wrappedAccBuilder.cleanupInstructions);
+      cancelSigners.push(...wrappedAccBuilder.signers);
+      receivingSolAccount = wrappedAccBuilder.account;
+    } else {
+      receivingSolAccount = wrappedAccBuilder;
+    }
 
     const cancelBidInstr = await cancelBid(
       wallet.publicKey.toBase58(),

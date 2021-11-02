@@ -72,24 +72,28 @@ export async function addTokensToVault(
     // no need iterate
     const nft = nfts[i];
     if (nft.box.tokenAccount) {
-      const newStoreAccount = createTokenAccount(
-        currInstructions,
+      const {
+        account: newStoreAccount,
+        instructions: createAccInstr,
+        signers: createAccSigners,
+      } = createTokenAccount(
         wallet.publicKey,
         accountRentExempt,
         toPublicKey(nft.box.tokenMint),
-        toPublicKey(vaultAuthority),
-        currSigners
+        toPublicKey(vaultAuthority)
       );
+      currInstructions.push(...createAccInstr);
+      currSigners.push(...createAccSigners);
       newStores.push(newStoreAccount.toBase58());
 
-      const transferAuthority = approve(
-        currInstructions,
-        [],
+      const { instruction, transferAuthority } = approve(
+        // currInstructions,
+        // [],
         toPublicKey(nft.box.tokenAccount),
         wallet.publicKey,
         nft.box.amount.toNumber()
       );
-
+      currInstructions.push(instruction);
       currSigners.push(transferAuthority);
 
       const addTokenVaultInstr = await addTokenToInactiveVault(
@@ -160,24 +164,29 @@ export async function addTokenToVault(
   let currSigners: Keypair[] = [];
   let currInstructions: TransactionInstruction[] = [];
   if (nft.box.tokenAccount) {
-    const newStoreAccount = createTokenAccount(
-      currInstructions,
+    const {
+      account: newStoreAccount,
+      instructions: createAccInstr,
+      signers: createAccSigners,
+    } = createTokenAccount(
       wallet.publicKey,
       accountRentExempt,
       toPublicKey(nft.box.tokenMint),
-      toPublicKey(vaultAuthority),
-      currSigners
+      toPublicKey(vaultAuthority)
     );
+    currInstructions.push(...createAccInstr);
+    currSigners.push(...createAccSigners);
     newStores.push(newStoreAccount.toBase58());
 
-    const transferAuthority = approve(
-      currInstructions,
-      [],
+    const { instruction, transferAuthority } = approve(
+      // currInstructions,
+      // [],
       toPublicKey(nft.box.tokenAccount),
       wallet.publicKey,
       nft.box.amount.toNumber()
     );
 
+    currInstructions.push(instruction);
     currSigners.push(transferAuthority);
 
     const addTokenVaultInstr = await addTokenToInactiveVault(

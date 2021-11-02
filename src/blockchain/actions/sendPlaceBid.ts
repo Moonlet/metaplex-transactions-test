@@ -98,14 +98,19 @@ export async function setupPlaceBid(
 
   let bidderPotTokenAccount: string;
   if (!auctionView.myBidderPot) {
-    bidderPotTokenAccount = createTokenAccount(
-      instructions,
+    const {
+      account: tokenAcc,
+      instructions: builderInstr,
+      signers: builderSigners,
+    } = createTokenAccount(
       wallet.publicKey,
       accountRentExempt,
       toPublicKey(auctionView.auction.data.info.tokenMint),
-      toPublicKey(auctionView.auction.pubkey),
-      signers
-    ).toBase58();
+      toPublicKey(auctionView.auction.pubkey)
+    );
+    instructions.push(...builderInstr);
+    signers.push(...builderSigners);
+    bidderPotTokenAccount = tokenAcc.toBase58();
   } else {
     bidderPotTokenAccount = auctionView.myBidderPot?.data.info.bidderPot;
     if (!auctionView.auction.data.info.ended()) {
@@ -123,23 +128,34 @@ export async function setupPlaceBid(
     }
   }
 
-  const payingSolAccount = ensureWrappedAccount(
-    instructions,
-    cleanupInstructions,
+  const wrappedAccBuilder = ensureWrappedAccount(
     tokenAccount,
     wallet.publicKey,
-    lamports + accountRentExempt * 2,
-    signers
+    lamports + accountRentExempt * 2
   );
 
-  const transferAuthority = approve(
-    instructions,
-    cleanupInstructions,
+  let payingSolAccount;
+  if (typeof wrappedAccBuilder !== 'string') {
+    instructions.push(...wrappedAccBuilder.instructions);
+    cleanupInstructions.push(...wrappedAccBuilder.cleanupInstructions);
+    signers.push(...wrappedAccBuilder.signers);
+    payingSolAccount = wrappedAccBuilder.account;
+  } else {
+    payingSolAccount = wrappedAccBuilder;
+  }
+
+  const { transferAuthority, instruction, cleanupInstruction } = approve(
+    // instructions,
+    // cleanupInstructions,
     toPublicKey(payingSolAccount),
     wallet.publicKey,
     lamports - accountRentExempt
   );
 
+  instructions.push(instruction);
+  if (cleanupInstruction) {
+    cleanupInstructions.push(cleanupInstruction);
+  }
   signers.push(transferAuthority);
 
   const bid = new BN(lamports - accountRentExempt);

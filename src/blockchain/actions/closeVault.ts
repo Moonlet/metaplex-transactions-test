@@ -45,31 +45,39 @@ export async function closeVault(
   );
   instructions.push(activateVaultInstr);
 
-  const outstandingShareAccount = createTokenAccount(
-    instructions,
+  const {
+    account: outstandingShareAccount,
+    instructions: shareAccInst,
+    signers: shareAccSigners,
+  } = createTokenAccount(
     wallet.publicKey,
     accountRentExempt,
     toPublicKey(fractionMint),
-    wallet.publicKey,
-    signers
+    wallet.publicKey
   );
+  instructions.push(...shareAccInst);
+  signers.push(...shareAccSigners);
 
-  const payingTokenAccount = createTokenAccount(
-    instructions,
+  const {
+    account: payingTokenAccount,
+    instructions: createAccInst,
+    signers: createAccSigners,
+  } = createTokenAccount(
     wallet.publicKey,
     accountRentExempt,
     toPublicKey(priceMint),
-    wallet.publicKey,
-    signers
+    wallet.publicKey
   );
+  instructions.push(...createAccInst);
+  signers.push(...createAccSigners);
 
   const transferAuthority = Keypair.generate();
 
   // Shouldn't need to pay anything since we activated vault with 0 shares, but we still
   // need this setup anyway.
-  approve(
-    instructions,
-    [],
+  const { instruction } = approve(
+    // instructions,
+    // [],
     payingTokenAccount,
     wallet.publicKey,
     0,
@@ -77,10 +85,11 @@ export async function closeVault(
     undefined,
     transferAuthority
   );
+  instructions.push(instruction);
 
-  approve(
-    instructions,
-    [],
+  const { instruction: approveInstr } = approve(
+    // instructions,
+    // [],
     outstandingShareAccount,
     wallet.publicKey,
     0,
@@ -88,6 +97,7 @@ export async function closeVault(
     undefined,
     transferAuthority
   );
+  instructions.push(approveInstr);
 
   signers.push(transferAuthority);
 

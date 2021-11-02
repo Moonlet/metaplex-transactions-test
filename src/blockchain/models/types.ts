@@ -150,6 +150,18 @@ export interface IAccountBuilder extends ITransactionBuilder {
   account: PublicKey;
 }
 
+export interface IApproveBuilder {
+  instruction: TransactionInstruction;
+  transferAuthority: Keypair;
+  cleanupInstruction?: TransactionInstruction;
+}
+export interface IEnsureWrappedAccBuilder extends ITransactionBuilder {
+  cleanupInstructions: TransactionInstruction[];
+  account: string;
+}
+
+// export interface
+
 // export const TokenAccountParser = (
 //   pubKey: StringPublicKey,
 //   info: AccountInfo<Buffer>

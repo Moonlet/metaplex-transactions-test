@@ -567,14 +567,15 @@ async function setupAuctionManagerInstructions(
 
   const { auctionManagerKey } = await getAuctionKeys(vault);
 
-  const acceptPayment = createTokenAccount(
-    instructions,
+  const createTokenBuilder = createTokenAccount(
     wallet.publicKey,
     accountRentExempt,
     toPublicKey(paymentMint),
-    toPublicKey(auctionManagerKey),
-    signers
-  ).toBase58();
+    toPublicKey(auctionManagerKey)
+  );
+  instructions.push(...createTokenBuilder.instructions);
+  signers.push(...createTokenBuilder.signers);
+  const acceptPayment = createTokenBuilder.account.toBase58();
 
   let maxRanges = [
     auctionSettings.winners.usize.toNumber(),

@@ -56,7 +56,8 @@ export async function createVault(
 
   const vault = Keypair.generate();
 
-  const vaultAuthority = ( // todo same here
+  const vaultAuthority = // todo same here
+  (
     await findProgramAddress(
       [
         Buffer.from(VAULT_PREFIX),
@@ -67,33 +68,36 @@ export async function createVault(
     )
   )[0];
 
-  const fractionalMint = createMint(
-    // instructions,
+  const createMintTrans = createMint(
     wallet.publicKey,
     mintRentExempt,
     0,
     toPublicKey(vaultAuthority),
     toPublicKey(vaultAuthority)
-    // signers
-  ).account.toBase58();
+  );
+  instructions.push(...createMintTrans.instructions);
+  signers.push(...createMintTrans.signers);
+  const fractionalMint = createMintTrans.account.toBase58();
 
-  const redeemTreasury = createTokenAccount(
-    instructions,
+  const redeemTreasuryBuilder = createTokenAccount(
     wallet.publicKey,
     accountRentExempt,
     toPublicKey(priceMint),
-    toPublicKey(vaultAuthority),
-    signers
-  ).toBase58();
+    toPublicKey(vaultAuthority)
+  );
+  instructions.push(...redeemTreasuryBuilder.instructions);
+  signers.push(...redeemTreasuryBuilder.signers);
+  const redeemTreasury = redeemTreasuryBuilder.account.toBase58();
 
-  const fractionTreasury = createTokenAccount(
-    instructions,
+  const fractionTreasuryBuilder = createTokenAccount(
     wallet.publicKey,
     accountRentExempt,
     toPublicKey(fractionalMint),
-    toPublicKey(vaultAuthority),
-    signers
-  ).toBase58();
+    toPublicKey(vaultAuthority)
+  );
+  instructions.push(...fractionTreasuryBuilder.instructions);
+  signers.push(...fractionTreasuryBuilder.signers);
+  const fractionTreasury = fractionTreasuryBuilder.account.toBase58();
 
   const uninitializedVault = SystemProgram.createAccount({
     fromPubkey: wallet.publicKey,

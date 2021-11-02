@@ -1,4 +1,9 @@
-import { AccountLayout, MintLayout, Token } from '@solana/spl-token';
+import {
+  AccountInfo as TokenAccountInfo,
+  AccountLayout,
+  MintLayout,
+  Token,
+} from '@solana/spl-token';
 import {
   AccountInfo,
   Keypair,
@@ -7,14 +12,17 @@ import {
   SYSVAR_RENT_PUBKEY,
   TransactionInstruction,
 } from '@solana/web3.js';
-import { AccountInfo as TokenAccountInfo } from '@solana/spl-token';
+import {
+  IAccountBuilder,
+  IApproveBuilder,
+  IEnsureWrappedAccBuilder,
+} from '../..';
 import {
   SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   WRAPPED_SOL_MINT,
 } from '../../utils/ids';
 import { programIds } from '../../utils/programIds';
-import { IAccountBuilder } from '../..';
 
 export interface TokenAccount {
   pubkey: string;
@@ -153,19 +161,14 @@ export function createMint(
 }
 
 export function createTokenAccount(
-  instructions: TransactionInstruction[],
   payer: PublicKey,
   accountRentExempt: number,
   mint: PublicKey,
-  owner: PublicKey,
-  signers: Keypair[]
-) {
+  owner: PublicKey
+): IAccountBuilder {
   const accBuilder = createUninitializedAccount(payer, accountRentExempt);
-  // todo: partial, replace
-  instructions.push(...accBuilder.instructions);
-  signers.push(...accBuilder.signers);
 
-  instructions.push(
+  accBuilder.instructions.push(
     Token.createInitAccountInstruction(
       TOKEN_PROGRAM_ID,
       mint,
@@ -174,20 +177,21 @@ export function createTokenAccount(
     )
   );
 
-  return accBuilder.account; //todo: return accBuilder
+  return accBuilder;
 }
 
 export function ensureWrappedAccount(
-  instructions: TransactionInstruction[],
-  cleanupInstructions: TransactionInstruction[],
   toCheck: TokenAccount | undefined,
   payer: PublicKey,
-  amount: number,
-  signers: Keypair[]
-) {
+  amount: number
+): IEnsureWrappedAccBuilder | string {
   if (toCheck && !toCheck.info.isNative) {
     return toCheck.pubkey;
   }
+
+  const instructions: TransactionInstruction[] = [];
+  const cleanupInstructions: TransactionInstruction[] = [];
+  const signers: Keypair[] = [];
 
   const TOKEN_PROGRAM_ID = programIds().token;
   const account = Keypair.generate();
@@ -222,12 +226,19 @@ export function ensureWrappedAccount(
 
   signers.push(account);
 
-  return account.publicKey.toBase58();
+  return {
+    instructions,
+    cleanupInstructions,
+    signers,
+    account: account.publicKey.toBase58(),
+  };
+
+  // return account.publicKey.toBase58();
 }
 
 export function approve(
-  instructions: TransactionInstruction[],
-  cleanupInstructions: TransactionInstruction[],
+  // instructions: TransactionInstruction[],
+  // cleanupInstructions: TransactionInstruction[],
   account: PublicKey,
   owner: PublicKey,
   amount: number,
@@ -236,28 +247,36 @@ export function approve(
   // if delegate is not passed ephemeral transfer authority is used
   delegate?: PublicKey,
   existingTransferAuthority?: Keypair
-): Keypair {
+): IApproveBuilder {
+  let instruction: TransactionInstruction;
+  let cleanupInstruction: TransactionInstruction | undefined = undefined;
+
   const tokenProgram = TOKEN_PROGRAM_ID;
 
   const transferAuthority = existingTransferAuthority || Keypair.generate();
   //const delegateKey = delegate ?? transferAuthority.publicKey;
 
-  instructions.push(
-    Token.createApproveInstruction(
-      tokenProgram,
-      account,
-      delegate ?? transferAuthority.publicKey,
-      owner,
-      [],
-      amount
-    )
+  instruction = Token.createApproveInstruction(
+    tokenProgram,
+    account,
+    delegate ?? transferAuthority.publicKey,
+    owner,
+    [],
+    amount
   );
 
   if (autoRevoke) {
-    cleanupInstructions.push(
-      Token.createRevokeInstruction(tokenProgram, account, owner, [])
+    cleanupInstruction = Token.createRevokeInstruction(
+      tokenProgram,
+      account,
+      owner,
+      []
     );
   }
 
-  return transferAuthority;
+  return {
+    instruction,
+    transferAuthority,
+    cleanupInstruction,
+  };
 }
