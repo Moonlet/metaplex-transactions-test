@@ -38,7 +38,7 @@ export const setProgramIds = async (store?: string) => {
 };
 
 let STORE: PublicKey | undefined = new PublicKey(
-  'D2xmoDZ5CFKB2CwSe5keghew8niF2PnnDeboU7dm3oTr'
+  'D2xmoDZ5CFKB2CwSe5keghew8niF2PnnDeboU7dm3oTr' // OUR STORE ID
 );
 
 export const programIds = () => {

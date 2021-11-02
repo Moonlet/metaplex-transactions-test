@@ -139,6 +139,7 @@ export interface AuctionView {
   isInstantSale: boolean;
 }
 
+// return types for functions used to build transcations
 export interface ITransactionBuilder {
   instructions: TransactionInstruction[];
   signers: Keypair[];

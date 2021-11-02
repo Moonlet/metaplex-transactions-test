@@ -1,11 +1,4 @@
-import { WalletAdapter } from '@solana/wallet-adapter-base';
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  Signer,
-  TransactionInstruction,
-} from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import {
   BidderMetadata,
   BidRedemptionTicket,
@@ -14,10 +7,9 @@ import {
   PrizeTrackingTicket,
   TokenAccount,
   WalletSigner,
-  AuctionView,
 } from '..';
-import { claimUnusedPrizes } from './claimUnusedPrizes';
 import { endAuction } from '../instructions-builder/metaplex/endAuction';
+import { claimUnusedPrizes } from './claimUnusedPrizes';
 
 interface EndSaleParams {
   auctionView: PartialAuctionView;

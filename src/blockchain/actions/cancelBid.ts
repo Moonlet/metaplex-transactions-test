@@ -20,6 +20,65 @@ import tokenAccountMock from '../../mock/cache/tokenAccountMock';
 import { claimUnusedPrizes } from './claimUnusedPrizes';
 import { setupPlaceBid } from './sendPlaceBid';
 
+export async function setupCancelBid(
+  auctionView: PartialAuctionView,
+  accountRentExempt: number,
+  wallet: WalletSigner
+): Promise<ITransactionBuilder> {
+  if (!wallet.publicKey) throw new Error();
+
+  const cancelSigners: Keypair[] = [];
+  const cancelInstructions: TransactionInstruction[] = [];
+  const cleanupInstructions: TransactionInstruction[] = [];
+
+  const finalInstructions: TransactionInstruction[] = [];
+  const finaSigners: Keypair[] = [];
+
+  // ~~~~~~~GET REAL DATA ~~~~~~~
+  // const tokenAccount = accountsByMint.get(
+  //   auctionView.auction.data.info.tokenMint
+  // );
+  // const mint = cache.get(auctionView.auction.data.info.tokenMint);
+
+  // ~~~~~ REPLACE THIS ~~~~~~
+  const tokenAccount = tokenAccountMock as any as TokenAccount;
+  const mint = mintMock as any as ParsedAccount<MintInfo>;
+
+  if (mint && auctionView.myBidderPot) {
+    const wrappedAccBuilder = ensureWrappedAccount(
+      tokenAccount,
+      wallet.publicKey,
+      accountRentExempt
+    );
+
+    let receivingSolAccount;
+    if (typeof wrappedAccBuilder !== 'string') {
+      cancelInstructions.push(...wrappedAccBuilder.instructions);
+      cleanupInstructions.push(...wrappedAccBuilder.cleanupInstructions);
+      cancelSigners.push(...wrappedAccBuilder.signers);
+      receivingSolAccount = wrappedAccBuilder.account;
+    } else {
+      receivingSolAccount = wrappedAccBuilder;
+    }
+
+    const cancelBidInstr = await cancelBid(
+      wallet.publicKey.toBase58(),
+      receivingSolAccount,
+      auctionView.myBidderPot.data.info.bidderPot,
+      auctionView.auction.data.info.tokenMint,
+      auctionView.vault.pubkey
+    );
+    cancelInstructions.push(cancelBidInstr);
+
+    finaSigners.push(...cancelSigners);
+    finalInstructions.push(...[...cancelInstructions, ...cleanupInstructions]);
+  }
+  return {
+    instructions: finalInstructions,
+    signers: finaSigners,
+  };
+}
+
 export async function sendCancelBid(
   connection: Connection,
   wallet: WalletSigner,
@@ -92,62 +151,4 @@ export async function sendCancelBid(
         SequenceType.StopOnFailure,
         'single'
       );
-}
-export async function setupCancelBid(
-  auctionView: PartialAuctionView,
-  accountRentExempt: number,
-  wallet: WalletSigner
-): Promise<ITransactionBuilder> {
-  if (!wallet.publicKey) throw new Error();
-
-  const cancelSigners: Keypair[] = [];
-  const cancelInstructions: TransactionInstruction[] = [];
-  const cleanupInstructions: TransactionInstruction[] = [];
-
-  const finalInstructions: TransactionInstruction[] = [];
-  const finaSigners: Keypair[] = [];
-
-  // ~~~~~~~GET REAL DATA ~~~~~~~
-  // const tokenAccount = accountsByMint.get(
-  //   auctionView.auction.data.info.tokenMint
-  // );
-  // const mint = cache.get(auctionView.auction.data.info.tokenMint);
-
-  // ~~~~~ REPLACE THIS ~~~~~~
-  const tokenAccount = tokenAccountMock as any as TokenAccount;
-  const mint = mintMock as any as ParsedAccount<MintInfo>;
-
-  if (mint && auctionView.myBidderPot) {
-    const wrappedAccBuilder = ensureWrappedAccount(
-      tokenAccount,
-      wallet.publicKey,
-      accountRentExempt
-    );
-
-    let receivingSolAccount;
-    if (typeof wrappedAccBuilder !== 'string') {
-      cancelInstructions.push(...wrappedAccBuilder.instructions);
-      cleanupInstructions.push(...wrappedAccBuilder.cleanupInstructions);
-      cancelSigners.push(...wrappedAccBuilder.signers);
-      receivingSolAccount = wrappedAccBuilder.account;
-    } else {
-      receivingSolAccount = wrappedAccBuilder;
-    }
-
-    const cancelBidInstr = await cancelBid(
-      wallet.publicKey.toBase58(),
-      receivingSolAccount,
-      auctionView.myBidderPot.data.info.bidderPot,
-      auctionView.auction.data.info.tokenMint,
-      auctionView.vault.pubkey
-    );
-    cancelInstructions.push(cancelBidInstr);
-
-    finaSigners.push(...cancelSigners);
-    finalInstructions.push(...[...cancelInstructions, ...cleanupInstructions]);
-  }
-  return {
-    instructions: finalInstructions,
-    signers: finaSigners,
-  };
 }

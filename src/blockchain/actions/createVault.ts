@@ -16,7 +16,11 @@ import {
   VAULT_PREFIX,
   createTokenAccount,
   ITransactionBuilder,
+  activateVault,
+  approve,
+  combineVault,
 } from '..';
+import BN from 'bn.js';
 
 import { AccountLayout, MintLayout } from '@solana/spl-token';
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
@@ -57,7 +61,8 @@ export async function createVault(
 
   const vault = Keypair.generate();
 
-  const vaultAuthority = ( // todo same here
+  const vaultAuthority = // todo same here
+  (
     await findProgramAddress(
       [
         Buffer.from(VAULT_PREFIX),
@@ -129,4 +134,106 @@ export async function createVault(
     signers,
     instructions,
   };
+}
+
+// This command "closes" the vault, by activating & combining it in one go, handing it over to the auction manager
+// authority (that may or may not exist yet.)
+export async function closeVault(
+  connection: Connection,
+  wallet: WalletSigner,
+  vault: StringPublicKey,
+  fractionMint: StringPublicKey,
+  fractionTreasury: StringPublicKey,
+  redeemTreasury: StringPublicKey,
+  priceMint: StringPublicKey,
+  externalPriceAccount: StringPublicKey
+): Promise<ITransactionBuilder> {
+  if (!wallet.publicKey) throw new Error();
+
+  const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
+    AccountLayout.span
+  );
+  const signers: Keypair[] = [];
+  const instructions: TransactionInstruction[] = [];
+
+  const activateVaultInstr = await activateVault(
+    new BN(0),
+    vault,
+    fractionMint,
+    fractionTreasury,
+    wallet.publicKey.toBase58()
+  );
+  instructions.push(activateVaultInstr);
+
+  const {
+    account: outstandingShareAccount,
+    instructions: shareAccInst,
+    signers: shareAccSigners,
+  } = createTokenAccount(
+    wallet.publicKey,
+    accountRentExempt,
+    toPublicKey(fractionMint),
+    wallet.publicKey
+  );
+  instructions.push(...shareAccInst);
+  signers.push(...shareAccSigners);
+
+  const {
+    account: payingTokenAccount,
+    instructions: createAccInst,
+    signers: createAccSigners,
+  } = createTokenAccount(
+    wallet.publicKey,
+    accountRentExempt,
+    toPublicKey(priceMint),
+    wallet.publicKey
+  );
+  instructions.push(...createAccInst);
+  signers.push(...createAccSigners);
+
+  const transferAuthority = Keypair.generate();
+
+  // Shouldn't need to pay anything since we activated vault with 0 shares, but we still
+  // need this setup anyway.
+  const { instruction } = approve(
+    // instructions,
+    // [],
+    payingTokenAccount,
+    wallet.publicKey,
+    0,
+    false,
+    undefined,
+    transferAuthority
+  );
+  instructions.push(instruction);
+
+  const { instruction: approveInstr } = approve(
+    // instructions,
+    // [],
+    outstandingShareAccount,
+    wallet.publicKey,
+    0,
+    false,
+    undefined,
+    transferAuthority
+  );
+  instructions.push(approveInstr);
+
+  signers.push(transferAuthority);
+
+  const combineVaultInstr = await combineVault(
+    vault,
+    outstandingShareAccount.toBase58(),
+    payingTokenAccount.toBase58(),
+    fractionMint,
+    fractionTreasury,
+    redeemTreasury,
+    wallet.publicKey.toBase58(),
+    wallet.publicKey.toBase58(),
+    transferAuthority.publicKey.toBase58(),
+    externalPriceAccount
+  );
+  instructions.push(combineVaultInstr);
+
+  return { instructions, signers };
 }

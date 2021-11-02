@@ -9,9 +9,14 @@ import {
 import BN from 'bn.js';
 import {
   AmountRange,
+  AUCTION_PREFIX,
+  createAuction,
+  CreateAuctionArgs,
   createTokenAccount,
   Creator,
   Edition,
+  ExternalPriceAccount,
+  findProgramAddress,
   getAuctionKeys,
   getEdition,
   getSafetyDepositBox,
@@ -23,6 +28,7 @@ import {
   ITransactionBuilderBatch,
   MasterEditionV1,
   MasterEditionV2,
+  MAX_EXTERNAL_ACCOUNT_SIZE,
   Metadata,
   ParsedAccount,
   ParticipationConfigV2,
@@ -32,10 +38,14 @@ import {
   sendTransactions,
   sendTransactionWithRetry,
   SequenceType,
+  setAuctionAuthority,
+  setVaultAuthority,
   startAuction,
   StringPublicKey,
   toPublicKey,
   TupleNumericType,
+  updateExternalPriceAccount,
+  utils,
   validateSafetyDepositBoxV2,
   WalletSigner,
   WhitelistedCreator,
@@ -45,11 +55,7 @@ import {
   addTokensToVault,
   SafetyDepositInstructionTemplate,
 } from './addTokensToVault';
-import { closeVault } from './closeVault';
-import { createExternalPriceAccount } from './createExternalPriceAccount';
-import { createVault } from './createVault';
-import { makeAuction } from './makeAuction';
-import { setVaultAndAuctionAuthorities } from './setVaultAndAuctionAuthorities';
+import { closeVault, createVault } from './createVault';
 // import { cacheAuctionIndexer } from './cacheAuctionInIndexer';
 
 interface normalPattern {
@@ -656,4 +662,124 @@ async function validateBoxes(
     instructions.push(tokenInstructions);
   }
   return { instructions, signers };
+}
+
+export async function makeAuction(
+  wallet: WalletSigner,
+  vault: StringPublicKey,
+  auctionSettings: IPartialCreateAuctionArgs
+): Promise<
+  ITransactionBuilder & {
+    auction: StringPublicKey;
+  }
+> {
+  if (!wallet.publicKey) throw new Error();
+
+  const PROGRAM_IDS = utils.programIds();
+
+  const signers: Keypair[] = [];
+  const instructions: TransactionInstruction[] = [];
+  const auctionKey = (
+    await findProgramAddress(
+      [
+        Buffer.from(AUCTION_PREFIX),
+        toPublicKey(PROGRAM_IDS.auction).toBuffer(),
+        toPublicKey(vault).toBuffer(),
+      ],
+      toPublicKey(PROGRAM_IDS.auction)
+    )
+  )[0];
+
+  const fullSettings = new CreateAuctionArgs({
+    ...auctionSettings,
+    authority: wallet.publicKey.toBase58(),
+    resource: vault,
+  });
+
+  const createAuctionInstr = await createAuction(
+    fullSettings,
+    wallet.publicKey.toBase58()
+  );
+  instructions.push(createAuctionInstr);
+
+  return { instructions, signers, auction: auctionKey };
+}
+
+export async function setVaultAndAuctionAuthorities(
+  wallet: WalletSigner,
+  vault: StringPublicKey,
+  auction: StringPublicKey,
+  auctionManager: StringPublicKey
+): Promise<ITransactionBuilder> {
+  if (!wallet.publicKey) throw new Error();
+
+  const signers: Keypair[] = [];
+  const instructions: TransactionInstruction[] = [];
+
+  const auctionAuthorityInstr = setAuctionAuthority(
+    auction,
+    wallet.publicKey.toBase58(),
+    auctionManager
+  );
+
+  instructions.push(auctionAuthorityInstr);
+
+  const vaultAuthInstr = setVaultAuthority(
+    vault,
+    wallet.publicKey.toBase58(),
+    auctionManager
+  );
+  instructions.push(vaultAuthInstr);
+
+  return { instructions, signers };
+}
+
+export async function createExternalPriceAccount(
+  connection: Connection,
+  wallet: WalletSigner
+): Promise<{
+  priceMint: StringPublicKey;
+  externalPriceAccount: StringPublicKey;
+  instructions: TransactionInstruction[];
+  signers: Keypair[];
+}> {
+  if (!wallet.publicKey) throw new Error();
+
+  const PROGRAM_IDS = utils.programIds();
+
+  const signers: Keypair[] = [];
+  const instructions: TransactionInstruction[] = [];
+
+  const epaRentExempt = await connection.getMinimumBalanceForRentExemption(
+    MAX_EXTERNAL_ACCOUNT_SIZE
+  );
+
+  const externalPriceAccount = Keypair.generate();
+  const key = externalPriceAccount.publicKey.toBase58();
+
+  const epaStruct = new ExternalPriceAccount({
+    pricePerShare: new BN(0),
+    priceMint: QUOTE_MINT.toBase58(),
+    allowedToCombine: true,
+  });
+
+  const uninitializedEPA = SystemProgram.createAccount({
+    fromPubkey: wallet.publicKey,
+    newAccountPubkey: externalPriceAccount.publicKey,
+    lamports: epaRentExempt,
+    space: MAX_EXTERNAL_ACCOUNT_SIZE,
+    programId: toPublicKey(PROGRAM_IDS.vault),
+  });
+  instructions.push(uninitializedEPA);
+  signers.push(externalPriceAccount);
+
+  const updateExPriceAccInstr = updateExternalPriceAccount(key, epaStruct);
+  instructions.push(updateExPriceAccInstr);
+
+  return {
+    externalPriceAccount: key,
+    priceMint: QUOTE_MINT.toBase58(),
+    instructions,
+    signers,
+  };
 }
