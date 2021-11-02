@@ -87,8 +87,6 @@ export async function addTokensToVault(
       newStores.push(newStoreAccount.toBase58());
 
       const { instruction, transferAuthority } = approve(
-        // currInstructions,
-        // [],
         toPublicKey(nft.box.tokenAccount),
         wallet.publicKey,
         nft.box.amount.toNumber()

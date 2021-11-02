@@ -248,17 +248,20 @@ export async function sendRedeemBid(
     wallet.publicKey.toBase58() ===
     auctionView.auctionManager.data.info.authority
   ) {
-    await claimUnusedPrizes(
-      connection,
-      wallet,
-      auctionView,
-      // accountsByMint,
-      // [], // dont reach the code where nedded beacause participationItem = undefined
-      // {}, // dont reach the code where nedded beacause participationItem = undefined
-      // {},
-      signers,
-      instructions
-    );
+    const { instructions: claimInstructions, signers: claimSigners } =
+      await claimUnusedPrizes(
+        connection,
+        wallet,
+        auctionView
+        // accountsByMint,
+        // [], // dont reach the code where nedded beacause participationItem = undefined
+        // {}, // dont reach the code where nedded beacause participationItem = undefined
+        // {},
+        // signers,
+        // instructions
+      );
+    instructions.push(...claimInstructions);
+    signers.push(...claimSigners);
   }
 
   // console.log('instructions: ', instructions);

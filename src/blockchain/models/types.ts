@@ -139,8 +139,6 @@ export interface AuctionView {
   isInstantSale: boolean;
 }
 
-// - with cleanUpInstructions; ??
-
 export interface ITransactionBuilder {
   instructions: TransactionInstruction[];
   signers: Keypair[];
@@ -162,6 +160,12 @@ export interface IApproveBuilder {
 export interface IEnsureWrappedAccBuilder extends ITransactionBuilder {
   cleanupInstructions: TransactionInstruction[];
   account: string;
+}
+
+export interface ICreateAuctionManager extends ITransactionBuilderBatch {
+  vault: StringPublicKey;
+  auction: StringPublicKey;
+  auctionManager: StringPublicKey;
 }
 
 // export interface

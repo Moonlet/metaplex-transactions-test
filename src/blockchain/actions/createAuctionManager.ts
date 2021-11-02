@@ -39,6 +39,7 @@ import {
   WhitelistedCreator,
   WinningConfigType,
   QUOTE_MINT,
+  ICreateAuctionManager,
 } from '..';
 import {
   addTokensToVault,
@@ -96,6 +97,7 @@ export interface SafetyDepositDraft {
   participationConfig?: ParticipationConfigV2;
 }
 
+// todo: create nice response type
 // This is a super command that executes many transactions to create a Vault, Auction, and AuctionManager starting
 // from some AuctionManagerSettings.
 export async function createAuctionManager(
@@ -110,17 +112,7 @@ export async function createAuctionManager(
   // participationSafetyDepositDraft: SafetyDepositDraft | undefined,
   // paymentMint: StringPublicKey,
   // storeIndexer: ParsedAccount<StoreIndexer>[],
-): Promise<
-  [
-    TransactionInstruction[][],
-    Keypair[][],
-    {
-      vault: StringPublicKey;
-      auction: StringPublicKey;
-      auctionManager: StringPublicKey;
-    }
-  ]
-> {
+): Promise<ICreateAuctionManager> {
   const paymentMint: StringPublicKey = QUOTE_MINT.toBase58();
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
     AccountLayout.span
@@ -194,6 +186,7 @@ export async function createAuctionManager(
   //   safetyDepositConfigs,
   // );
 
+  // todo: move all outside or inside
   const lookup: byType = {
     // markItemsThatArentMineAsSold: await markItemsThatArentMineAsSold( // todo: dont think we need this
     //   wallet,
@@ -339,15 +332,13 @@ export async function createAuctionManager(
 
   let filteredSigners = signers.filter((_, i) => !toRemoveSigners[i]);
 
-  return [
+  return {
     instructions,
-    filteredSigners,
-    {
-      vault,
-      auction,
-      auctionManager,
-    },
-  ];
+    signers: filteredSigners,
+    vault,
+    auction,
+    auctionManager,
+  };
 
   // return { vault, auction, auctionManager };
 

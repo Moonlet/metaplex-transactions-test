@@ -60,18 +60,20 @@ export async function sendCancelBid(
     ) &&
     auctionView.auction.data.info.ended()
   ) {
-    // ~~~~~~~~~~TODO - UNCOMMENT THIS!!!!!! ~~~~~~
-    await claimUnusedPrizes(
-      connection,
-      wallet,
-      auctionView,
-      // accountsByMint,
-      // bids,
-      // bidRedemptions,
-      // prizeTrackingTickets,
-      signers,
-      instructions
-    );
+    const { instructions: claimInstr, signers: claimSigners } =
+      await claimUnusedPrizes(
+        connection,
+        wallet,
+        auctionView
+        // accountsByMint,
+        // bids,
+        // bidRedemptions,
+        // prizeTrackingTickets,
+        // signers,
+        // instructions
+      );
+    instructions.push(...claimInstr);
+    signers.push(...claimSigners);
   }
 
   instructions.length === 1

@@ -1,3 +1,7 @@
+import {
+  ITransactionBuilder,
+  ITransactionBuilderBatch,
+} from './../models/types';
 // import { Error } from '@solana/wallet-adapter-base';
 import { AccountLayout } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
@@ -63,17 +67,18 @@ export async function findEligibleParticipationBidsForRedemption(
 export async function claimUnusedPrizes(
   connection: Connection,
   wallet: WalletSigner,
-  auctionView: PartialAuctionView,
+  auctionView: PartialAuctionView
   // accountsByMint: Map<string, TokenAccount>,
   // bids: ParsedAccount<BidderMetadata>[],
   // bidRedemptions: Record<string, ParsedAccount<BidRedemptionTicket>>,
   // prizeTrackingTickets: Record<string, ParsedAccount<PrizeTrackingTicket>>,
-  signers: Array<Keypair[]>,
-  instructions: Array<TransactionInstruction[]>
-) {
+): Promise<ITransactionBuilderBatch> {
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
     AccountLayout.span
   );
+
+  const signers: Keypair[][] = [];
+  const instructions: TransactionInstruction[][] = [];
   // const mintRentExempt = await connection.getMinimumBalanceForRentExemption(
   //   MintLayout.span,
   // );
@@ -206,17 +211,18 @@ export async function claimUnusedPrizes(
         // }
         case WinningConfigType.FullRightsTransfer:
           console.log('Redeeming Full Rights');
-          await setupRedeemFullRightsTransferInstructions(
-            auctionView,
-            // accountsByMint,
-            accountRentExempt,
-            wallet,
-            safetyDeposit,
-            item,
-            signers,
-            instructions,
-            winnerIndex
-          );
+          const { instructions: redeemInstr, signers: redeemSigners } =
+            await setupRedeemFullRightsTransferInstructions(
+              auctionView,
+              // accountsByMint,
+              accountRentExempt,
+              wallet,
+              safetyDeposit,
+              item,
+              winnerIndex
+            );
+          instructions.push(redeemInstr);
+          signers.push(redeemSigners);
           break;
         // case WinningConfigType.TokenOnlyTransfer:
         //   console.log('Redeeming Token only');
@@ -234,6 +240,10 @@ export async function claimUnusedPrizes(
       }
     }
   }
+  return {
+    instructions,
+    signers,
+  };
 
   // const allV2s = Object.values(printingV2ByMint);
   // for (let i = 0; i < allV2s.length; i++) {
@@ -310,10 +320,8 @@ async function setupRedeemFullRightsTransferInstructions(
   wallet: WalletSigner,
   safetyDeposit: ParsedAccount<SafetyDepositBox>,
   item: AuctionViewItem,
-  signers: Array<Keypair[]>,
-  instructions: Array<TransactionInstruction[]>,
   winningConfigIndex: number
-) {
+): Promise<ITransactionBuilder> {
   if (!wallet.publicKey) throw new Error();
 
   const winningPrizeSigner: Keypair[] = [];
@@ -322,8 +330,8 @@ async function setupRedeemFullRightsTransferInstructions(
     winningConfigIndex,
     safetyDeposit.info.order
   );
-  signers.push(winningPrizeSigner);
-  instructions.push(winningPrizeInstructions);
+  // signers.push(winningPrizeSigner);
+  // instructions.push(winningPrizeInstructions);
   if (!claimed) {
     // ~~~~~~~GET REAL DATA ~~~~~~~
     // let newTokenAccount = accountsByMint.get(
@@ -359,6 +367,10 @@ async function setupRedeemFullRightsTransferInstructions(
     );
     winningPrizeInstructions.push(redeemFullInstr);
   }
+  return {
+    instructions: winningPrizeInstructions,
+    signers: winningPrizeSigner,
+  };
 }
 
 // async function setupWithdrawMasterEditionInstructions(

@@ -41,15 +41,8 @@ export async function endSale({
     new PublicKey(auctionManager.data.info.authority)
   );
 
-  const claimInstructions: Array<TransactionInstruction[]> = [];
-  const claimSigners: Array<Keypair[]> = [];
-  await claimUnusedPrizes(
-    connection,
-    wallet,
-    auctionView,
-    claimSigners,
-    claimInstructions
-  );
+  const { instructions: claimInstructions, signers: claimSigners } =
+    await claimUnusedPrizes(connection, wallet, auctionView);
 
   const instructions = [endAuctionInstr, ...claimInstructions];
   const signers = [[], ...claimSigners];
