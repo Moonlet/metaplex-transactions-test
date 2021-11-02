@@ -1,8 +1,3 @@
-import {
-  Vault,
-  SafetyDepositBox,
-} from '../../blockchain/instructions-builder/main/vault';
-
 import BN from 'bn.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import {
@@ -22,6 +17,7 @@ import {
   PriceFloorType,
   SafetyDepositConfig,
   TupleNumericType,
+  Vault,
   WinningConfigType,
 } from '../../blockchain';
 

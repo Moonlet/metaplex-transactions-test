@@ -1,5 +1,4 @@
 import BN from 'bn.js';
-import { SafetyDepositBox } from '../../blockchain/instructions-builder/main/vault';
 
 import defaultAuctionView from '../bid/auctionView';
 import {
@@ -9,6 +8,7 @@ import {
   Metadata,
   MetadataKey,
   PartialAuctionView,
+  SafetyDepositBox,
 } from '../../blockchain';
 
 export const metadata: Metadata = new Metadata({

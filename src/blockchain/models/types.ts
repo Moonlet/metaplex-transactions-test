@@ -14,8 +14,9 @@ import {
   AuctionManager,
   AuctionViewItem,
   BidRedemptionTicket,
+  SafetyDepositBox,
+  Vault,
 } from '..';
-import { SafetyDepositBox, Vault } from '../instructions-builder/main';
 import { StringPublicKey } from '../utils';
 
 export interface ParsedAccountBase {

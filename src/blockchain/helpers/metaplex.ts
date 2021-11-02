@@ -1,7 +1,6 @@
 import { SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 import bs58 from 'bs58';
-import { SafetyDepositBox, Vault } from '../instructions-builder/main';
 import {
   AuctionData,
   AuctionManagerV1,
@@ -16,8 +15,10 @@ import {
   ParsedAccount,
   ParticipationConfigV1,
   programIds,
+  SafetyDepositBox,
   StringPublicKey,
   toPublicKey,
+  Vault,
 } from '..';
 
 export const METAPLEX_PREFIX = 'metaplex';
