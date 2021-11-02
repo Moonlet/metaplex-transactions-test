@@ -4,24 +4,22 @@ import {
 } from '../../blockchain/instructions-builder/main/vault';
 
 import BN from 'bn.js';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import {
+  AmountRange,
   AuctionData,
+  AuctionManager,
+  AuctionManagerStateV2,
+  AuctionManagerStatus,
+  AuctionManagerV2,
   AuctionState,
   Bid,
   BidderPot,
   BidState,
   BidStateType,
+  PartialAuctionView,
   PriceFloor,
   PriceFloorType,
-} from '../../blockchain/instructions-builder/main/auction';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import {
-  AmountRange,
-  AuctionManager,
-  AuctionManagerStateV2,
-  AuctionManagerStatus,
-  AuctionManagerV2,
-  PartialAuctionView,
   SafetyDepositConfig,
   TupleNumericType,
   WinningConfigType,

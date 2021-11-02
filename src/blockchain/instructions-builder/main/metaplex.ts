@@ -2,20 +2,20 @@ import { SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 import bs58 from 'bs58';
 import {
-  AuctionData,
-  AUCTION_PREFIX,
-  getAuctionExtended,
   MasterEditionV1,
   MasterEditionV2,
   Metadata,
-  METADATA,
   SafetyDepositBox,
   Vault,
 } from '.';
 import {
+  AuctionData,
   AuctionManagerV1,
+  AUCTION_PREFIX,
   DEPRECATED_SCHEMA,
   findProgramAddress,
+  getAuctionExtended,
+  METADATA,
   ParsedAccount,
   ParticipationConfigV1,
   programIds,

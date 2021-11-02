@@ -1,8 +1,13 @@
 import { SYSVAR_CLOCK_PUBKEY, TransactionInstruction } from '@solana/web3.js';
 import { serialize } from 'borsh';
-import { ClaimBidArgs, getAuctionKeys, SCHEMA } from '../..';
+import {
+  ClaimBidArgs,
+  getAuctionExtended,
+  getAuctionKeys,
+  getBidderPotKey,
+  SCHEMA,
+} from '../..';
 import { programIds, StringPublicKey, toPublicKey } from '../../utils';
-import { getAuctionExtended, getBidderPotKey } from '../main';
 
 export async function claimBid(
   acceptPayment: StringPublicKey,

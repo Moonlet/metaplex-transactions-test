@@ -6,3 +6,4 @@ export * as instructions from './instructions-builder';
 export * from './instructions-builder';
 export * as actions from './actions';
 export * from './actions';
+export * from './helpers';

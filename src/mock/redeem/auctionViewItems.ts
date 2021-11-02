@@ -1,4 +1,3 @@
-import { BidderMetadata } from '../../blockchain/instructions-builder/main/auction';
 import BN from 'bn.js';
 import { SafetyDepositBox } from '../../blockchain/instructions-builder/main/vault';
 import {
@@ -7,7 +6,11 @@ import {
   MetadataKey,
 } from '../../blockchain/instructions-builder/main/metadata';
 import defaultAuctionView from '../bid/auctionView';
-import { AuctionViewItem, PartialAuctionView } from '../../blockchain';
+import {
+  AuctionViewItem,
+  BidderMetadata,
+  PartialAuctionView,
+} from '../../blockchain';
 
 export const metadata: Metadata = new Metadata({
   updateAuthority: 'JEBT6WNy86TRcqbG4vQwAaA6n8NpzsjPDfXXvi1Fs526',

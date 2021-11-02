@@ -5,7 +5,7 @@ import {
 } from '@solana/web3.js';
 import { serialize } from 'borsh';
 
-import { VAULT_PREFIX, getAuctionExtended } from '../main';
+import { VAULT_PREFIX } from '../main';
 import {
   findProgramAddress,
   programIds,
@@ -20,6 +20,7 @@ import {
   ProxyCallAddress,
   RedeemFullRightsTransferBidArgs,
   SCHEMA,
+  getAuctionExtended,
 } from '../..';
 
 export async function redeemFullRightsTransferBid(
