@@ -2,12 +2,8 @@
 import { AccountLayout } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
 import {
-  AuctionView,
   AuctionViewItem,
-  BidderMetadata,
-  BidRedemptionTicket,
   createTokenAccount,
-  getBidRedemption,
   ParsedAccount,
   PartialAuctionView,
   redeemFullRightsTransferBid,
@@ -21,46 +17,6 @@ import {
   ITransactionBuilder,
   ITransactionBuilderBatch,
 } from './../models/types';
-import { eligibleForParticipationPrizeGivenWinningIndex } from './sendRedeemBid';
-
-export async function findEligibleParticipationBidsForRedemption(
-  auctionView: AuctionView,
-  bids: ParsedAccount<BidderMetadata>[],
-  bidRedemptions: Record<string, ParsedAccount<BidRedemptionTicket>>
-): Promise<
-  {
-    bid: ParsedAccount<BidderMetadata>;
-    bidRedemption: ParsedAccount<BidRedemptionTicket>;
-  }[]
-> {
-  const unredeemedParticipations: {
-    bid: ParsedAccount<BidderMetadata>;
-    bidRedemption: ParsedAccount<BidRedemptionTicket>;
-  }[] = [];
-  for (let i = 0; i < bids.length; i++) {
-    const bid = bids[i];
-    if (!bid.info.cancelled) {
-      const winnerIndex = auctionView.auction.info.bidState.getWinnerIndex(
-        bid.info.bidderPubkey
-      );
-      const bidRedemption =
-        bidRedemptions[
-          await getBidRedemption(auctionView.auction.pubkey, bid.pubkey)
-        ];
-      const eligible = eligibleForParticipationPrizeGivenWinningIndex(
-        winnerIndex,
-        auctionView,
-        bid,
-        bidRedemption
-      );
-      console.log(bid.pubkey, 'eligible?', eligible);
-      if (eligible) {
-        unredeemedParticipations.push({ bid, bidRedemption });
-      }
-    }
-  }
-  return unredeemedParticipations;
-}
 
 export async function claimUnusedPrizes(
   connection: Connection,

@@ -19,6 +19,12 @@ import {
   activateVault,
   approve,
   combineVault,
+  setAuctionAuthority,
+  setVaultAuthority,
+  addTokenToInactiveVault,
+  ITransactionBuilderBatch,
+  MetadataKey,
+  SafetyDepositInstructionTemplate,
 } from '..';
 import BN from 'bn.js';
 
@@ -61,8 +67,7 @@ export async function createVault(
 
   const vault = Keypair.generate();
 
-  const vaultAuthority = // todo same here
-  (
+  const vaultAuthority = ( // todo same here
     await findProgramAddress(
       [
         Buffer.from(VAULT_PREFIX),
@@ -236,4 +241,131 @@ export async function closeVault(
   instructions.push(combineVaultInstr);
 
   return { instructions, signers };
+}
+
+export async function setVaultAndAuctionAuthorities(
+  wallet: WalletSigner,
+  vault: StringPublicKey,
+  auction: StringPublicKey,
+  auctionManager: StringPublicKey
+): Promise<ITransactionBuilder> {
+  if (!wallet.publicKey) throw new Error();
+
+  const signers: Keypair[] = [];
+  const instructions: TransactionInstruction[] = [];
+
+  const auctionAuthorityInstr = setAuctionAuthority(
+    auction,
+    wallet.publicKey.toBase58(),
+    auctionManager
+  );
+
+  instructions.push(auctionAuthorityInstr);
+
+  const vaultAuthInstr = setVaultAuthority(
+    vault,
+    wallet.publicKey.toBase58(),
+    auctionManager
+  );
+  instructions.push(vaultAuthInstr);
+
+  return { instructions, signers };
+}
+
+const BATCH_SIZE = 1;
+export async function addTokensToVault(
+  connection: Connection,
+  wallet: WalletSigner,
+  vault: StringPublicKey,
+  nfts: SafetyDepositInstructionTemplate[] // only one every time
+): Promise<
+  ITransactionBuilderBatch & {
+    safetyDepositTokenStores: StringPublicKey[];
+  }
+> {
+  if (!wallet.publicKey) throw new Error();
+
+  const PROGRAM_IDS = utils.programIds();
+
+  const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
+    AccountLayout.span
+  );
+
+  const vaultAuthority = (
+    await findProgramAddress(
+      [
+        Buffer.from(VAULT_PREFIX),
+        toPublicKey(PROGRAM_IDS.vault).toBuffer(),
+        toPublicKey(vault).toBuffer(),
+      ],
+      toPublicKey(PROGRAM_IDS.vault)
+    )
+  )[0];
+
+  let batchCounter = 0;
+
+  const signers: Array<Keypair[]> = [];
+  const instructions: Array<TransactionInstruction[]> = [];
+  const newStores: StringPublicKey[] = [];
+
+  let currSigners: Keypair[] = [];
+  let currInstructions: TransactionInstruction[] = [];
+  for (let i = 0; i < nfts.length; i++) {
+    // no need iterate
+    const nft = nfts[i];
+    if (nft.box.tokenAccount) {
+      const {
+        account: newStoreAccount,
+        instructions: createAccInstr,
+        signers: createAccSigners,
+      } = createTokenAccount(
+        wallet.publicKey,
+        accountRentExempt,
+        toPublicKey(nft.box.tokenMint),
+        toPublicKey(vaultAuthority)
+      );
+      currInstructions.push(...createAccInstr);
+      currSigners.push(...createAccSigners);
+      newStores.push(newStoreAccount.toBase58());
+
+      const { instruction, transferAuthority } = approve(
+        toPublicKey(nft.box.tokenAccount),
+        wallet.publicKey,
+        nft.box.amount.toNumber()
+      );
+      currInstructions.push(instruction);
+      currSigners.push(transferAuthority);
+
+      const addTokenVaultInstr = await addTokenToInactiveVault(
+        nft.draft.masterEdition &&
+          nft.draft.masterEdition.info.key === MetadataKey.MasterEditionV2
+          ? new BN(1)
+          : nft.box.amount,
+        nft.box.tokenMint,
+        nft.box.tokenAccount,
+        newStoreAccount.toBase58(),
+        vault,
+        wallet.publicKey.toBase58(),
+        wallet.publicKey.toBase58(),
+        transferAuthority.publicKey.toBase58()
+      );
+      currInstructions.push(addTokenVaultInstr);
+
+      if (batchCounter === BATCH_SIZE) {
+        signers.push(currSigners);
+        instructions.push(currInstructions);
+        batchCounter = 0;
+        currSigners = [];
+        currInstructions = [];
+      }
+      batchCounter++;
+    }
+  }
+
+  if (instructions[instructions.length - 1] !== currInstructions) {
+    signers.push(currSigners);
+    instructions.push(currInstructions);
+  }
+
+  return { signers, instructions, safetyDepositTokenStores: newStores };
 }

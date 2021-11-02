@@ -35,11 +35,10 @@ import {
   programIds,
   QUOTE_MINT,
   SafetyDepositConfig,
+  SafetyDepositInstructionTemplate,
   sendTransactions,
   sendTransactionWithRetry,
   SequenceType,
-  setAuctionAuthority,
-  setVaultAuthority,
   startAuction,
   StringPublicKey,
   toPublicKey,
@@ -53,10 +52,10 @@ import {
 } from '..';
 import {
   addTokensToVault,
-  SafetyDepositInstructionTemplate,
-} from './addTokensToVault';
-import { closeVault, createVault } from './createVault';
-// import { cacheAuctionIndexer } from './cacheAuctionInIndexer';
+  closeVault,
+  createVault,
+  setVaultAndAuctionAuthorities,
+} from './vaultOperations';
 
 interface normalPattern {
   instructions: TransactionInstruction[];
@@ -412,78 +411,6 @@ async function buildSafetyDepositArray(
     });
   });
 
-  // if (
-  // participationSafetyDepositDraft &&
-  // participationSafetyDepositDraft.masterEdition
-  // ) {
-  //   const maxAmount = [
-  //     ...participationSafetyDepositDraft.amountRanges.map(s => s.amount),
-  //   ]
-  //     .sort()
-  //     .reverse()[0];
-  //   const maxLength = [
-  //     ...participationSafetyDepositDraft.amountRanges.map(s => s.length),
-  //   ]
-  //     .sort()
-  //     .reverse()[0];
-  //   const config = new SafetyDepositConfig({
-  //     directArgs: {
-  //       auctionManager: SystemProgram.programId.toBase58(),
-  //       order: new BN(safetyDeposits.length),
-  //       amountRanges: participationSafetyDepositDraft.amountRanges,
-  //       amountType: maxAmount?.gte(new BN(255))
-  //         ? TupleNumericType.U32
-  //         : TupleNumericType.U8,
-  //       lengthType: maxLength?.gte(new BN(255))
-  //         ? TupleNumericType.U32
-  //         : TupleNumericType.U8,
-  //       winningConfigType: WinningConfigType.Participation,
-  //       participationConfig:
-  //         participationSafetyDepositDraft.participationConfig || null,
-  //       participationState: new ParticipationStateV2({
-  //         collectedToAcceptPayment: new BN(0),
-  //       }),
-  //     },
-  //   });
-
-  //   if (
-  //     participationSafetyDepositDraft.masterEdition.info.key ==
-  //     MetadataKey.MasterEditionV1
-  //   ) {
-  //     const me =
-  //       participationSafetyDepositDraft.masterEdition as ParsedAccount<MasterEditionV1>;
-  //     safetyDepositTemplates.push({
-  //       box: {
-  //         tokenAccount: (
-  //           await findProgramAddress(
-  //             [
-  //               wallet.publicKey.toBuffer(),
-  //               programIds().token.toBuffer(),
-  //               toPublicKey(
-  //                 me?.info.oneTimePrintingAuthorizationMint,
-  //               ).toBuffer(),
-  //             ],
-  //             programIds().associatedToken,
-  //           )
-  //         )[0],
-  //         tokenMint: me?.info.oneTimePrintingAuthorizationMint,
-  //         amount: new BN(1),
-  //       },
-  //       config,
-  //       draft: participationSafetyDepositDraft,
-  //     });
-  //   } else {
-  //     safetyDepositTemplates.push({
-  //       box: {
-  //         tokenAccount: participationSafetyDepositDraft.holding,
-  //         tokenMint: participationSafetyDepositDraft.metadata.info.mint,
-  //         amount: new BN(1),
-  //       },
-  //       config,
-  //       draft: participationSafetyDepositDraft,
-  //     });
-  //   }
-  // }
   console.log('Temps', safetyDepositTemplates);
   return safetyDepositTemplates;
 }
@@ -703,35 +630,6 @@ export async function makeAuction(
   instructions.push(createAuctionInstr);
 
   return { instructions, signers, auction: auctionKey };
-}
-
-export async function setVaultAndAuctionAuthorities(
-  wallet: WalletSigner,
-  vault: StringPublicKey,
-  auction: StringPublicKey,
-  auctionManager: StringPublicKey
-): Promise<ITransactionBuilder> {
-  if (!wallet.publicKey) throw new Error();
-
-  const signers: Keypair[] = [];
-  const instructions: TransactionInstruction[] = [];
-
-  const auctionAuthorityInstr = setAuctionAuthority(
-    auction,
-    wallet.publicKey.toBase58(),
-    auctionManager
-  );
-
-  instructions.push(auctionAuthorityInstr);
-
-  const vaultAuthInstr = setVaultAuthority(
-    vault,
-    wallet.publicKey.toBase58(),
-    auctionManager
-  );
-  instructions.push(vaultAuthInstr);
-
-  return { instructions, signers };
 }
 
 export async function createExternalPriceAccount(

@@ -3,14 +3,10 @@ import { AccountLayout } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
 import {
   AuctionState,
-  AuctionView,
   AuctionViewItem,
-  BidderMetadata,
-  BidRedemptionTicket,
   claimBid,
   createTokenAccount,
   getMetadata,
-  NonWinningConstraint,
   ParsedAccount,
   PartialAuctionView,
   redeemFullRightsTransferBid,
@@ -20,7 +16,6 @@ import {
   updatePrimarySaleHappenedViaToken,
   WalletSigner,
   WinningConfigType,
-  WinningConstraint,
 } from '..';
 import safetyDepositAccount from '../../mock/cache/safetyDepositAccount';
 import {
@@ -30,31 +25,6 @@ import {
 import { setupCancelBid } from './cancelBid';
 import { claimUnusedPrizes } from './claimUnusedPrizes';
 import { setupPlaceBid } from './sendPlaceBid';
-
-export function eligibleForParticipationPrizeGivenWinningIndex(
-  winnerIndex: number | null,
-  auctionView: AuctionView,
-  bidderMetadata: ParsedAccount<BidderMetadata> | undefined,
-  bidRedemption: ParsedAccount<BidRedemptionTicket> | undefined
-) {
-  const index =
-    auctionView.auctionManager.participationConfig?.safetyDepositBoxIndex;
-  if (index == undefined || index == null) {
-    return false;
-  }
-
-  if (!bidderMetadata || bidRedemption?.info.getBidRedeemed(index))
-    return false;
-
-  return (
-    (winnerIndex === null &&
-      auctionView.auctionManager.participationConfig?.nonWinningConstraint !==
-        NonWinningConstraint.NoParticipationPrize) ||
-    (winnerIndex !== null &&
-      auctionView.auctionManager.participationConfig?.winnerConstraint !==
-        WinningConstraint.NoParticipationPrize)
-  );
-}
 
 // this one is called by the winner
 export async function sendRedeemBid(

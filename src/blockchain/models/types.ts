@@ -16,8 +16,11 @@ import {
   BidRedemptionTicket,
   SafetyDepositBox,
   Vault,
+  SafetyDepositConfig,
+  SafetyDepositDraft,
 } from '..';
 import { StringPublicKey } from '../utils';
+import BN from 'bn.js';
 
 export interface ParsedAccountBase {
   pubkey: StringPublicKey;
@@ -137,6 +140,16 @@ export interface AuctionView {
   vault: ParsedAccount<Vault>;
   totallyComplete: boolean;
   isInstantSale: boolean;
+}
+
+export interface SafetyDepositInstructionTemplate {
+  box: {
+    tokenAccount?: StringPublicKey;
+    tokenMint: StringPublicKey;
+    amount: BN;
+  };
+  draft: SafetyDepositDraft;
+  config: SafetyDepositConfig;
 }
 
 // return types for functions used to build transcations
