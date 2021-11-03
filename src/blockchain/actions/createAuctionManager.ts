@@ -536,6 +536,7 @@ async function validateBoxes(
 
     const me = safetyDeposits[i].draft
       .masterEdition as ParsedAccount<MasterEditionV1>;
+    // todo: always false ?
     if (
       safetyDeposits[i].config.winningConfigType ===
         WinningConfigType.PrintingV1 &&

@@ -31,8 +31,10 @@ export const metadata: Metadata = new Metadata({
   isMutable: true,
   editionNonce: 254,
 });
-metadata.edition = '67kGFRDHRWHhxJzuVXpZivkRyTJFUBAfeaAxfdNWgy3J';
-metadata.masterEdition = '67kGFRDHRWHhxJzuVXpZivkRyTJFUBAfeaAxfdNWgy3J';
+
+// metadata.init();
+// metadata.edition = '67kGFRDHRWHhxJzuVXpZivkRyTJFUBAfeaAxfdNWgy3J';
+// metadata.masterEdition = '67kGFRDHRWHhxJzuVXpZivkRyTJFUBAfeaAxfdNWgy3J';
 
 const safetyDeposit = new SafetyDepositBox({
   vault: 'Bp7rwFtx9hyqVp5QrD8QijYMGNNBt9J3h21bi9TFGvpG',
