@@ -1,5 +1,6 @@
 import { Transaction } from '@solana/web3.js';
 import {
+  getRentExemptions,
   MasterEditionV1,
   MasterEditionV2,
   ParsedAccount,
@@ -52,39 +53,32 @@ export const triggerAuction = async () => {
     return;
   }
 
-  console.log('~~~~~~~START PROCESSING~~~~~~');
+  const rentExemption = await getRentExemptions(connection);
+
   const result = await createAuctionManager(
-    connection,
     walletSinger.publicKey,
+    rentExemption,
     whitelistedCreatorsByCreator, // this is a kind of cache, if missing => getWhitelistedCreator(creator: StringPublicKey) will be called
     auctionSettingsBuidler,
     safetyDeposit
   );
 
   console.log(result);
-
-  console.log('~~~~~~~END PROCESSING~~~~~~');
 };
 
 export const triggerAuctionInstantSale = async () => {
   const safetyDeposit = await initSafetyDeposit();
-  console.log('~~~~~~~INPUT DATA~~~~~~~');
-  // console.log(auctionSettings);
-  // console.log(safetyDepositDrafts);
-  // console.log(whitelistedCreatorsByCreator);
+  const rentExemption = await getRentExemptions(connection);
 
-  console.log('~~~~~~~START PROCESSING~~~~~~');
   const result = await createAuctionManager(
-    connection,
     walletSinger.publicKey,
+    rentExemption,
     whitelistedCreatorsByCreator,
     auctionSettingsInstantSale,
     safetyDeposit
   );
 
   console.log(result);
-
-  console.log('~~~~~~~END PROCESSING~~~~~~');
 };
 
 triggerAuction();

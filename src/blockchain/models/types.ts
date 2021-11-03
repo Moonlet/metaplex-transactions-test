@@ -181,6 +181,11 @@ export interface IEnsureWrappedAccBuilder extends ITransactionBuilder {
   cleanupInstructions: TransactionInstruction[];
   account: string;
 }
+export interface IEnsureWrappedAccBuilderV2 {
+  transaction: ITransactionBuilder;
+  cleanupInstructions: TransactionInstruction[];
+  account: string;
+}
 
 export interface ICreateAuctionManager extends ITransactionBuilderBatch {
   vault: StringPublicKey;

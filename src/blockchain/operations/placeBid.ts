@@ -1,28 +1,36 @@
-import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
-import { WalletSigner, PartialAuctionView, ITransactionBuilderBatch } from '..';
+import { PublicKey } from '@solana/web3.js';
 import BN from 'bn.js';
+import {
+  getExemptionVal,
+  ITransactionBuilder,
+  PartialAuctionView,
+  RentExemp,
+} from '..';
 import { setupPlaceBid } from '../transactions/bid';
 
 export async function sendPlaceBid(
-  connection: Connection,
-  wallet: WalletSigner,
+  publicKey: PublicKey | null,
+  rentExemption: Map<RentExemp, number>,
   bidderTokenAccount: string | undefined,
   auctionView: PartialAuctionView,
   // value entered by the user adjust to decimals of the mint
   amount: number | BN
-): Promise<ITransactionBuilderBatch> {
-  const signers: Keypair[][] = [];
-  const instructions: TransactionInstruction[][] = [];
-  const { instructions: placeBidInstr, signers: placeBidSigners } =
-    await setupPlaceBid(
-      connection,
-      wallet,
-      bidderTokenAccount,
-      auctionView,
-      amount
-    );
-  instructions.push(placeBidInstr);
-  signers.push(placeBidSigners);
+): Promise<ITransactionBuilder[]> {
+  const transactions: ITransactionBuilder[] = [];
 
-  return { instructions, signers };
+  const accountRentExempt = getExemptionVal(
+    rentExemption,
+    RentExemp.AccountLayout
+  );
+
+  const placeBidResult = await setupPlaceBid(
+    accountRentExempt,
+    publicKey,
+    bidderTokenAccount,
+    auctionView,
+    amount
+  );
+  transactions.push(placeBidResult.transaction);
+
+  return transactions;
 }

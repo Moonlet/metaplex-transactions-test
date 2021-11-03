@@ -1,20 +1,17 @@
-import {
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  TransactionInstruction,
-} from '@solana/web3.js';
+import { Keypair, PublicKey, TransactionInstruction } from '@solana/web3.js';
 import BN from 'bn.js';
 import {
   activateVault,
   addTokenToInactiveVault,
   approve,
+  // approve,
   AUCTION_PREFIX,
   combineVault,
+  createAccount,
   createAuction,
   CreateAuctionArgs,
-  createMint,
-  createTokenAccount,
+  // createMint,
+  // createTokenAccount,
   ExternalPriceAccount,
   findProgramAddress,
   findValidWhitelistedCreator,
@@ -48,6 +45,7 @@ import {
   WhitelistedCreator,
   WinningConfigType,
 } from '..';
+import { createMint, createTokenAccount } from './common';
 
 export async function setupAuctionManagerInstructions(
   publicKey: PublicKey | null,
@@ -78,8 +76,8 @@ export async function setupAuctionManagerInstructions(
     toPublicKey(paymentMint),
     toPublicKey(auctionManagerKey)
   );
-  instructions.push(...createTokenBuilder.instructions);
-  signers.push(...createTokenBuilder.signers);
+  instructions.push(...createTokenBuilder.transaction.instructions);
+  signers.push(...createTokenBuilder.transaction.signers);
   const acceptPayment = createTokenBuilder.account.toBase58();
 
   let maxRanges = [
@@ -264,13 +262,14 @@ export async function createExternalPriceAccount(
     allowedToCombine: true,
   });
 
-  const uninitializedEPA = SystemProgram.createAccount({
+  const uninitializedEPA = createAccount({
     fromPubkey: publicKey,
     newAccountPubkey: externalPriceAccount.publicKey,
     lamports: epaRentExempt,
     space: MAX_EXTERNAL_ACCOUNT_SIZE,
     programId: toPublicKey(PROGRAM_IDS.vault),
   });
+
   instructions.push(uninitializedEPA);
   signers.push(externalPriceAccount);
 
@@ -318,7 +317,8 @@ export async function createVault(
 
   const vault = Keypair.generate();
 
-  const vaultAuthority = ( // todo same here
+  const vaultAuthority = // todo same here
+  (
     await findProgramAddress(
       [
         Buffer.from(VAULT_PREFIX),
@@ -329,6 +329,7 @@ export async function createVault(
     )
   )[0];
 
+  // create mint
   const createMintTrans = createMint(
     publicKey,
     mintRentExempt,
@@ -336,31 +337,33 @@ export async function createVault(
     toPublicKey(vaultAuthority),
     toPublicKey(vaultAuthority)
   );
-  instructions.push(...createMintTrans.instructions);
-  signers.push(...createMintTrans.signers);
+  instructions.push(...createMintTrans.transaction.instructions);
+  signers.push(...createMintTrans.transaction.signers);
   const fractionalMint = createMintTrans.account.toBase58();
 
+  // create redeem treasury builder
   const redeemTreasuryBuilder = createTokenAccount(
     publicKey,
     accountRentExempt,
     toPublicKey(priceMint),
     toPublicKey(vaultAuthority)
   );
-  instructions.push(...redeemTreasuryBuilder.instructions);
-  signers.push(...redeemTreasuryBuilder.signers);
+  instructions.push(...redeemTreasuryBuilder.transaction.instructions);
+  signers.push(...redeemTreasuryBuilder.transaction.signers);
   const redeemTreasury = redeemTreasuryBuilder.account.toBase58();
 
-  const fractionTreasuryBuilder = createTokenAccount(
+  // create fractional mint builder
+  const fractionlMintBuilder = createTokenAccount(
     publicKey,
     accountRentExempt,
     toPublicKey(fractionalMint),
     toPublicKey(vaultAuthority)
   );
-  instructions.push(...fractionTreasuryBuilder.instructions);
-  signers.push(...fractionTreasuryBuilder.signers);
-  const fractionTreasury = fractionTreasuryBuilder.account.toBase58();
+  instructions.push(...fractionlMintBuilder.transaction.instructions);
+  signers.push(...fractionlMintBuilder.transaction.signers);
+  const fractionTreasury = fractionlMintBuilder.account.toBase58();
 
-  const uninitializedVault = SystemProgram.createAccount({
+  const uninitializedVault = createAccount({
     fromPubkey: publicKey,
     newAccountPubkey: vault.publicKey,
     lamports: vaultRentExempt,
@@ -420,66 +423,54 @@ export async function closeVault(
   );
   instructions.push(activateVaultInstr);
 
-  const {
-    account: outstandingShareAccount,
-    instructions: shareAccInst,
-    signers: shareAccSigners,
-  } = createTokenAccount(
+  const createTokenFraction = createTokenAccount(
     publicKey,
     accountRentExempt,
     toPublicKey(fractionMint),
     publicKey
   );
-  instructions.push(...shareAccInst);
-  signers.push(...shareAccSigners);
+  instructions.push(...createTokenFraction.transaction.instructions);
+  signers.push(...createTokenFraction.transaction.signers);
 
-  const {
-    account: payingTokenAccount,
-    instructions: createAccInst,
-    signers: createAccSigners,
-  } = createTokenAccount(
+  const createTokenMint = createTokenAccount(
     publicKey,
     accountRentExempt,
     toPublicKey(priceMint),
     publicKey
   );
-  instructions.push(...createAccInst);
-  signers.push(...createAccSigners);
+  instructions.push(...createTokenMint.transaction.instructions);
+  signers.push(...createTokenMint.transaction.signers);
 
   const transferAuthority = Keypair.generate();
 
   // Shouldn't need to pay anything since we activated vault with 0 shares, but we still
   // need this setup anyway.
-  const { instruction } = approve(
-    // instructions,
-    // [],
-    payingTokenAccount,
+  const approveMint = approve(
+    createTokenMint.account,
     publicKey,
     0,
     false,
     undefined,
     transferAuthority
   );
-  instructions.push(instruction);
+  instructions.push(approveMint.instruction);
 
-  const { instruction: approveInstr } = approve(
-    // instructions,
-    // [],
-    outstandingShareAccount,
+  const approveFraction = approve(
+    createTokenFraction.account,
     publicKey,
     0,
     false,
     undefined,
     transferAuthority
   );
-  instructions.push(approveInstr);
+  instructions.push(approveFraction.instruction);
 
   signers.push(transferAuthority);
 
   const combineVaultInstr = await combineVault(
     vault,
-    outstandingShareAccount.toBase58(),
-    payingTokenAccount.toBase58(),
+    createTokenFraction.account.toBase58(),
+    createTokenMint.account.toBase58(),
     fractionMint,
     fractionTreasury,
     redeemTreasury,
@@ -550,19 +541,15 @@ export async function addTokensToVault(
   let signers: Keypair[] = [];
   let instructions: TransactionInstruction[] = [];
   if (nft.box.tokenAccount) {
-    const {
-      account: newStoreAccount,
-      instructions: createAccInstr,
-      signers: createAccSigners,
-    } = createTokenAccount(
+    const createToken = createTokenAccount(
       publicKey,
       accountRentExempt,
       toPublicKey(nft.box.tokenMint),
       toPublicKey(vaultAuthority)
     );
-    instructions.push(...createAccInstr);
-    signers.push(...createAccSigners);
-    newStore = newStoreAccount.toBase58();
+    instructions.push(...createToken.transaction.instructions);
+    signers.push(...createToken.transaction.signers);
+    newStore = createToken.account.toBase58();
 
     const { instruction, transferAuthority } = approve(
       toPublicKey(nft.box.tokenAccount),
@@ -579,7 +566,7 @@ export async function addTokensToVault(
         : nft.box.amount,
       nft.box.tokenMint,
       nft.box.tokenAccount,
-      newStoreAccount.toBase58(),
+      createToken.account.toBase58(),
       vault,
       publicKey.toBase58(),
       publicKey.toBase58(),

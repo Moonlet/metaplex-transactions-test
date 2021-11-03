@@ -6,6 +6,7 @@ import {
 } from '@solana/spl-token';
 import {
   AccountInfo,
+  CreateAccountParams,
   Keypair,
   PublicKey,
   SystemProgram,
@@ -280,3 +281,11 @@ export function approve(
     cleanupInstruction,
   };
 }
+
+export const createAccount = (
+  params: CreateAccountParams
+): TransactionInstruction => {
+  return SystemProgram.createAccount({
+    ...params,
+  });
+};

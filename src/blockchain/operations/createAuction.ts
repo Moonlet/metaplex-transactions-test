@@ -9,11 +9,10 @@
  * - refactor transaction to build direclty ITransactionBuilder => DONE
    - refactor destructure for instructions too => DONE
  */
-import { Connection, PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import {
   buildSafetyDeposit,
   getExemptionVal,
-  getRentExemptions,
   IPartialCreateAuctionArgs,
   ITransactionBuilder,
   ParsedAccount,
@@ -38,8 +37,8 @@ import {
 // params to be more friendly
 // waht we need for the action
 export async function createAuctionManager(
-  connection: Connection,
   publicKey: PublicKey | null,
+  rentExemption: Map<RentExemp, number>,
   whitelistedCreatorsByCreator: Record<
     string,
     ParsedAccount<WhitelistedCreator>
@@ -50,7 +49,7 @@ export async function createAuctionManager(
   const paymentMint: StringPublicKey = QUOTE_MINT.toBase58();
   const transactions: ITransactionBuilder[] = [];
 
-  const rentExemption = await getRentExemptions(connection);
+  // const rentExemption = await getRentExemptions(connection);
 
   // rent exemptions
   const epaRentExemption = getExemptionVal(
