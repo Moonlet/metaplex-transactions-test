@@ -361,7 +361,6 @@ export function updateExternalPriceAccount(
 
   const value = new UpdateExternalPriceAccountArgs({ externalPriceAccount });
   const data = Buffer.from(serialize(VAULT_SCHEMA, value));
-  console.log('Data', data);
 
   const keys = [
     {

@@ -17,7 +17,13 @@ import {
   SafetyDepositBox,
   Vault,
   SafetyDepositConfig,
-  SafetyDepositDraft,
+  AmountRange,
+  Edition,
+  MasterEditionV1,
+  MasterEditionV2,
+  Metadata,
+  ParticipationConfigV2,
+  WinningConfigType,
 } from '..';
 import { StringPublicKey } from '../utils';
 import BN from 'bn.js';
@@ -180,4 +186,50 @@ export interface ICreateAuctionManager extends ITransactionBuilderBatch {
   vault: StringPublicKey;
   auction: StringPublicKey;
   auctionManager: StringPublicKey;
+}
+
+// create auction types
+export interface normalPattern {
+  instructions: TransactionInstruction[];
+  signers: Keypair[];
+}
+
+export interface arrayPattern {
+  instructions: TransactionInstruction[][];
+  signers: Keypair[][];
+}
+
+export type CreateAuctionData = {
+  vault: StringPublicKey;
+  auction: StringPublicKey;
+  auctionManager: StringPublicKey;
+};
+
+export interface byType {
+  // markItemsThatArentMineAsSold: arrayPattern;
+  addTokens: arrayPattern;
+  // deprecatedCreateReservationList: arrayPattern;
+  validateBoxes: arrayPattern;
+  createVault: normalPattern;
+  closeVault: normalPattern;
+  makeAuction: normalPattern;
+  initAuctionManager: normalPattern;
+  startAuction: normalPattern;
+  setVaultAndAuctionAuthorities: normalPattern;
+  externalPriceAccount: normalPattern;
+  // deprecatedValidateParticipation?: normalPattern;
+  // deprecatedBuildAndPopulateOneTimeAuthorizationAccount?: normalPattern;
+  // deprecatedPopulatePrintingTokens?: arrayPattern;
+  // cacheAuctionIndexer: arrayPattern;
+}
+
+export interface SafetyDepositDraft {
+  metadata: ParsedAccount<Metadata>;
+  masterEdition?: ParsedAccount<MasterEditionV1 | MasterEditionV2>;
+  edition?: ParsedAccount<Edition>;
+  holding: StringPublicKey;
+  printingMintHolding?: StringPublicKey;
+  winningConfigType: WinningConfigType;
+  amountRanges: AmountRange[];
+  participationConfig?: ParticipationConfigV2;
 }

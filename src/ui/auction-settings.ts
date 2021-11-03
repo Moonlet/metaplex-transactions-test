@@ -34,7 +34,7 @@ export const buildAuctionSettings = (
     tickSize: isAuction
       ? new BN((auctionData?.tickSize || 0) * LAMPORTS_PER_SOL)
       : null,
-    instantSalePrice: isAuction ? null : new BN(amount * LAMPORTS_PER_SOL),
+    instantSalePrice: isAuction ? null : new BN(amount * LAMPORTS_PER_SOL), // refactor
     priceFloor: new PriceFloor({
       type: PriceFloorType.Minimum,
       minPrice: new BN(amount * LAMPORTS_PER_SOL), // auction price

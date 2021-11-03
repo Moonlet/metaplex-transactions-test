@@ -33,7 +33,7 @@ import { AccountLayout, MintLayout } from '@solana/spl-token';
 
 // This command creates the external pricing oracle a vault
 // This gets the vault ready for adding the tokens.
-export async function createVault(
+async function createVault(
   connection: Connection,
   wallet: WalletSigner,
   priceMint: StringPublicKey,
@@ -143,7 +143,7 @@ export async function createVault(
 
 // This command "closes" the vault, by activating & combining it in one go, handing it over to the auction manager
 // authority (that may or may not exist yet.)
-export async function closeVault(
+async function closeVault(
   connection: Connection,
   wallet: WalletSigner,
   vault: StringPublicKey,
@@ -243,7 +243,7 @@ export async function closeVault(
   return { instructions, signers };
 }
 
-export async function setVaultAndAuctionAuthorities(
+async function setVaultAndAuctionAuthorities(
   wallet: WalletSigner,
   vault: StringPublicKey,
   auction: StringPublicKey,
@@ -273,7 +273,7 @@ export async function setVaultAndAuctionAuthorities(
 }
 
 const BATCH_SIZE = 1;
-export async function addTokensToVault(
+async function addTokensToVault(
   connection: Connection,
   wallet: WalletSigner,
   vault: StringPublicKey,

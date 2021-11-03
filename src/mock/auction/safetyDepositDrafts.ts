@@ -1,13 +1,17 @@
 import BN from 'bn.js';
-import { AmountRange, Metadata, WinningConfigType } from '../../blockchain';
-import { SafetyDepositDraft } from '../../blockchain/actions/createAuctionManager';
+import {
+  AmountRange,
+  Metadata,
+  WinningConfigType,
+  SafetyDepositDraft,
+} from '../../blockchain';
 import { masterEdition, metadata } from '../redeem/auctionViewItems';
 
 const metadataNFT: Metadata = new Metadata({ ...metadata });
 metadataNFT.updateAuthority = '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan';
 
 export default {
-  holding: '8c1Zb9C5JzvW3nRdtDzhvWgZ1VNsmeWpGTh51QwvMa89', // tokenAccount
+  holding: '8c1Zb9C5JzvW3nRdtDzhvWgZ1VNsmeWpGTh51QwvMa89', // tokenAccount => derivation from current account,  not from API
   // masterEdition: {
   //   pubkey: '67kGFRDHRWHhxJzuVXpZivkRyTJFUBAfeaAxfdNWgy3J',
   //   info: masterEdition, // get from DB

@@ -1,13 +1,12 @@
+import { Transaction } from '@solana/web3.js';
 import {
   MasterEditionV1,
   MasterEditionV2,
   ParsedAccount,
+  SafetyDepositDraft,
   StringPublicKey,
 } from './blockchain';
-import {
-  createAuctionManager,
-  SafetyDepositDraft,
-} from './blockchain/actions/createAuctionManager';
+import { createAuctionManager } from './blockchain/operations/createAuction';
 import { connection, walletSinger } from './common-setup';
 import auctionSettingsInstantSale from './mock/auction/auctionSettingsInstantSale';
 import safetyDepositDraft from './mock/auction/safetyDepositDrafts';
