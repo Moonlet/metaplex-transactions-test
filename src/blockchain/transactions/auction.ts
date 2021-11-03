@@ -15,14 +15,13 @@ import {
   CreateAuctionArgs,
   createMint,
   createTokenAccount,
-  Creator,
   ExternalPriceAccount,
   findProgramAddress,
+  findValidWhitelistedCreator,
   getAuctionKeys,
   getEdition,
   getExemptionVal,
   getSafetyDepositBox,
-  getWhitelistedCreator,
   initAuctionManagerV2,
   initVault,
   IPartialCreateAuctionArgs,
@@ -35,8 +34,6 @@ import {
   programIds,
   QUOTE_MINT,
   RentExemp,
-  SafetyDepositConfig,
-  SafetyDepositDraft,
   SafetyDepositInstructionTemplate,
   setAuctionAuthority,
   setVaultAuthority,
@@ -127,22 +124,6 @@ export async function setupStartAuction(
   instructions.push(startAuctionInstr);
 
   return { instructions, signers };
-}
-
-async function findValidWhitelistedCreator(
-  whitelistedCreatorsByCreator: Record<
-    string,
-    ParsedAccount<WhitelistedCreator>
-  >,
-  creators: Creator[]
-): Promise<StringPublicKey> {
-  for (let i = 0; i < creators.length; i++) {
-    const creator = creators[i];
-
-    if (whitelistedCreatorsByCreator[creator.address]?.info.activated)
-      return whitelistedCreatorsByCreator[creator.address].pubkey;
-  }
-  return await getWhitelistedCreator(creators[0]?.address);
 }
 
 export async function validateBoxes(
@@ -337,8 +318,7 @@ export async function createVault(
 
   const vault = Keypair.generate();
 
-  const vaultAuthority = // todo same here
-  (
+  const vaultAuthority = ( // todo same here
     await findProgramAddress(
       [
         Buffer.from(VAULT_PREFIX),

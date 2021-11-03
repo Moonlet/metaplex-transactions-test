@@ -4,6 +4,7 @@ import bs58 from 'bs58';
 import {
   AuctionData,
   AUCTION_PREFIX,
+  Creator,
   findProgramAddress,
   getAuctionExtended,
   MasterEditionV1,
@@ -849,6 +850,22 @@ export async function getOriginalAuthority(
       toPublicKey(PROGRAM_IDS.metaplex)
     )
   )[0];
+}
+
+export async function findValidWhitelistedCreator(
+  whitelistedCreatorsByCreator: Record<
+    string,
+    ParsedAccount<WhitelistedCreator>
+  >,
+  creators: Creator[]
+): Promise<StringPublicKey> {
+  for (let i = 0; i < creators.length; i++) {
+    const creator = creators[i];
+
+    if (whitelistedCreatorsByCreator[creator.address]?.info.activated)
+      return whitelistedCreatorsByCreator[creator.address].pubkey;
+  }
+  return await getWhitelistedCreator(creators[0]?.address);
 }
 
 export async function getWhitelistedCreator(
