@@ -53,66 +53,62 @@ import {
 import BN from 'bn.js';
 import { AccountLayout, MintLayout } from '@solana/spl-token';
 
-export function buildSafetyDepositArray(
+export function buildSafetyDeposit(
   wallet: WalletSigner,
-  safetyDeposits: SafetyDepositDraft[]
-  // participationSafetyDepositDraft: SafetyDepositDraft | undefined,
-): SafetyDepositInstructionTemplate[] {
+  safetyDeposit: SafetyDepositDraft
+): SafetyDepositInstructionTemplate {
   if (!wallet.publicKey) throw new Error();
 
-  const safetyDepositTemplates: SafetyDepositInstructionTemplate[] = [];
-  safetyDeposits.forEach((s, i) => {
-    const maxAmount = [...s.amountRanges.map((a) => a.amount)]
-      .sort()
-      .reverse()[0];
+  let safetyDepositTemplate: SafetyDepositInstructionTemplate;
+  const maxAmount = [...safetyDeposit.amountRanges.map((a) => a.amount)]
+    .sort()
+    .reverse()[0];
 
-    const maxLength = [...s.amountRanges.map((a) => a.length)]
-      .sort()
-      .reverse()[0];
-    safetyDepositTemplates.push({
-      box: {
-        tokenAccount:
-          s.winningConfigType !== WinningConfigType.PrintingV1 // every time FullRightsTransfer
-            ? s.holding
-            : s.printingMintHolding,
-        tokenMint:
-          s.winningConfigType !== WinningConfigType.PrintingV1 // every time FullRightsTransfer
-            ? s.metadata.info.mint
-            : (s.masterEdition as ParsedAccount<MasterEditionV1>)?.info
-                .printingMint,
-        amount:
-          s.winningConfigType == WinningConfigType.PrintingV2 ||
-          s.winningConfigType == WinningConfigType.FullRightsTransfer
-            ? new BN(1) // every time: 1
-            : new BN(
-                s.amountRanges.reduce(
-                  (acc, r) => acc.add(r.amount.mul(r.length)),
-                  new BN(0)
-                )
-              ),
+  const maxLength = [...safetyDeposit.amountRanges.map((a) => a.length)]
+    .sort()
+    .reverse()[0];
+  safetyDepositTemplate = {
+    box: {
+      tokenAccount:
+        safetyDeposit.winningConfigType !== WinningConfigType.PrintingV1 // every time FullRightsTransfer
+          ? safetyDeposit.holding
+          : safetyDeposit.printingMintHolding,
+      tokenMint:
+        safetyDeposit.winningConfigType !== WinningConfigType.PrintingV1 // every time FullRightsTransfer
+          ? safetyDeposit.metadata.info.mint
+          : (safetyDeposit.masterEdition as ParsedAccount<MasterEditionV1>)
+              ?.info.printingMint,
+      amount:
+        safetyDeposit.winningConfigType == WinningConfigType.PrintingV2 ||
+        safetyDeposit.winningConfigType == WinningConfigType.FullRightsTransfer
+          ? new BN(1) // every time: 1
+          : new BN(
+              safetyDeposit.amountRanges.reduce(
+                (acc, r) => acc.add(r.amount.mul(r.length)),
+                new BN(0)
+              )
+            ),
+    },
+    config: new SafetyDepositConfig({
+      directArgs: {
+        auctionManager: SystemProgram.programId.toBase58(),
+        order: new BN(0),
+        amountRanges: safetyDeposit.amountRanges,
+        amountType: maxAmount.gte(new BN(254))
+          ? TupleNumericType.U16
+          : TupleNumericType.U8, // every time
+        lengthType: maxLength.gte(new BN(254))
+          ? TupleNumericType.U16
+          : TupleNumericType.U8, // every time
+        winningConfigType: safetyDeposit.winningConfigType,
+        participationConfig: null,
+        participationState: null,
       },
-      config: new SafetyDepositConfig({
-        directArgs: {
-          auctionManager: SystemProgram.programId.toBase58(),
-          order: new BN(i),
-          amountRanges: s.amountRanges,
-          amountType: maxAmount.gte(new BN(254))
-            ? TupleNumericType.U16
-            : TupleNumericType.U8, // every time
-          lengthType: maxLength.gte(new BN(254))
-            ? TupleNumericType.U16
-            : TupleNumericType.U8, // every time
-          winningConfigType: s.winningConfigType,
-          participationConfig: null,
-          participationState: null,
-        },
-      }),
-      draft: s,
-    });
-  });
+    }),
+    draft: safetyDeposit,
+  };
 
-  console.log('Temps', safetyDepositTemplates);
-  return safetyDepositTemplates;
+  return safetyDepositTemplate;
 }
 
 export async function setupAuctionManagerInstructions(
@@ -120,7 +116,7 @@ export async function setupAuctionManagerInstructions(
   vault: StringPublicKey,
   paymentMint: StringPublicKey,
   accountRentExempt: number,
-  safetyDeposits: SafetyDepositInstructionTemplate[],
+  // safetyDeposit: SafetyDepositInstructionTemplate,
   auctionSettings: IPartialCreateAuctionArgs
 ): Promise<{
   transaction: ITransactionBuilder;
@@ -150,7 +146,7 @@ export async function setupAuctionManagerInstructions(
 
   let maxRanges = [
     auctionSettings.winners.usize.toNumber(),
-    safetyDeposits.length,
+    /*safetyDeposit.length */ 0,
     100,
   ].sort()[0];
   if (maxRanges < 10) {
@@ -163,7 +159,7 @@ export async function setupAuctionManagerInstructions(
     wallet.publicKey.toBase58(),
     acceptPayment,
     store,
-    safetyDeposits.length >= 254 ? TupleNumericType.U16 : TupleNumericType.U8, // fiex U8
+    TupleNumericType.U8,
     auctionSettings.winners.usize.toNumber() >= 254
       ? TupleNumericType.U16
       : TupleNumericType.U8,
@@ -618,15 +614,14 @@ export async function setVaultAndAuctionAuthorities(
   return { instructions, signers };
 }
 
-const BATCH_SIZE = 1;
 export async function addTokensToVault(
   connection: Connection,
   wallet: WalletSigner,
   vault: StringPublicKey,
-  nft: SafetyDepositInstructionTemplate // only one every time
+  nft: SafetyDepositInstructionTemplate
 ): Promise<{
   transaction: ITransactionBuilder;
-  safetyDepositTokenStores: StringPublicKey[];
+  safetyDepositTokenStore: StringPublicKey;
 }> {
   if (!wallet.publicKey) throw new Error();
 
@@ -646,7 +641,7 @@ export async function addTokensToVault(
       toPublicKey(PROGRAM_IDS.vault)
     )
   )[0];
-  const newStores: StringPublicKey[] = [];
+  let newStore: StringPublicKey | undefined = undefined;
 
   let signers: Keypair[] = [];
   let instructions: TransactionInstruction[] = [];
@@ -663,7 +658,7 @@ export async function addTokensToVault(
     );
     instructions.push(...createAccInstr);
     signers.push(...createAccSigners);
-    newStores.push(newStoreAccount.toBase58());
+    newStore = newStoreAccount.toBase58();
 
     const { instruction, transferAuthority } = approve(
       toPublicKey(nft.box.tokenAccount),
@@ -687,10 +682,12 @@ export async function addTokensToVault(
       transferAuthority.publicKey.toBase58()
     );
     instructions.push(addTokenVaultInstr);
+  } else {
+    throw new Error('token account missing');
   }
 
   return {
     transaction: { signers, instructions },
-    safetyDepositTokenStores: newStores,
+    safetyDepositTokenStore: newStore,
   };
 }

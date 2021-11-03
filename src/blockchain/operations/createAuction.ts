@@ -24,7 +24,7 @@ import {
 } from '..';
 import {
   addTokensToVault,
-  buildSafetyDepositArray,
+  buildSafetyDeposit,
   closeVault,
   createExternalPriceAccount,
   createVault,
@@ -45,7 +45,7 @@ export async function createAuctionManager(
     ParsedAccount<WhitelistedCreator>
   >,
   auctionSettings: IPartialCreateAuctionArgs,
-  safetyDepositDrafts: SafetyDepositDraft[]
+  safetyDepositDraft: SafetyDepositDraft
 ): Promise<ITransactionBuilder[]> {
   const paymentMint: StringPublicKey = QUOTE_MINT.toBase58();
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
@@ -53,6 +53,9 @@ export async function createAuctionManager(
   );
   //todo: list with all rents to remove the connection
   const transactions: ITransactionBuilder[] = [];
+
+  // todo: send as param
+  const safetyDepositConfig = buildSafetyDeposit(wallet, safetyDepositDraft);
 
   //#1 create external price account
   const extAccResult = await createExternalPriceAccount(connection, wallet);
@@ -75,19 +78,12 @@ export async function createAuctionManager(
   );
   transactions.push(makeAccResult.transaction);
 
-  // todo: send as param
-  const safetyDepositConfigs = buildSafetyDepositArray(
-    wallet,
-    safetyDepositDrafts
-  );
-
   //#4 setup auction manager
   const autionManagerResult = await setupAuctionManagerInstructions(
     wallet,
     createVaultResult.vault,
     paymentMint,
     accountRentExempt,
-    safetyDepositConfigs,
     auctionSettings
   );
   transactions.push(autionManagerResult.transaction);
@@ -97,7 +93,7 @@ export async function createAuctionManager(
     connection,
     wallet,
     createVaultResult.vault,
-    safetyDepositConfigs[0] // todo: get only one
+    safetyDepositConfig
   );
   transactions.push(addTokensResult.transaction);
 
@@ -135,8 +131,8 @@ export async function createAuctionManager(
     wallet,
     whitelistedCreatorsByCreator,
     createVaultResult.vault,
-    safetyDepositConfigs[0],
-    addTokensResult.safetyDepositTokenStores[0] // todo: should not be array
+    safetyDepositConfig,
+    addTokensResult.safetyDepositTokenStore
   );
   transactions.push(validateBoxesTrans);
 
