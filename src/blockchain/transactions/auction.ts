@@ -3,6 +3,7 @@ import {
   Keypair,
   TransactionInstruction,
   Connection,
+  PublicKey,
 } from '@solana/web3.js';
 import {
   WalletSigner,
@@ -54,10 +55,10 @@ import BN from 'bn.js';
 import { AccountLayout, MintLayout } from '@solana/spl-token';
 
 export function buildSafetyDeposit(
-  wallet: WalletSigner,
+  publicKey: PublicKey | null,
   safetyDeposit: SafetyDepositDraft
 ): SafetyDepositInstructionTemplate {
-  if (!wallet.publicKey) throw new Error();
+  if (!publicKey) throw new Error();
 
   let safetyDepositTemplate: SafetyDepositInstructionTemplate;
   const maxAmount = [...safetyDeposit.amountRanges.map((a) => a.amount)]
@@ -112,7 +113,7 @@ export function buildSafetyDeposit(
 }
 
 export async function setupAuctionManagerInstructions(
-  wallet: WalletSigner,
+  publicKey: PublicKey | null,
   vault: StringPublicKey,
   paymentMint: StringPublicKey,
   accountRentExempt: number,
@@ -122,7 +123,7 @@ export async function setupAuctionManagerInstructions(
   transaction: ITransactionBuilder;
   auctionManager: StringPublicKey;
 }> {
-  if (!wallet.publicKey) throw new Error();
+  if (!publicKey) throw new Error();
 
   const store = programIds().store?.toBase58();
   if (!store) {
@@ -135,7 +136,7 @@ export async function setupAuctionManagerInstructions(
   const { auctionManagerKey } = await getAuctionKeys(vault);
 
   const createTokenBuilder = createTokenAccount(
-    wallet.publicKey,
+    publicKey,
     accountRentExempt,
     toPublicKey(paymentMint),
     toPublicKey(auctionManagerKey)
@@ -155,8 +156,8 @@ export async function setupAuctionManagerInstructions(
 
   const initAuctionInstr = await initAuctionManagerV2(
     vault,
-    wallet.publicKey.toBase58(),
-    wallet.publicKey.toBase58(),
+    publicKey.toBase58(),
+    publicKey.toBase58(),
     acceptPayment,
     store,
     TupleNumericType.U8,
@@ -174,18 +175,15 @@ export async function setupAuctionManagerInstructions(
 }
 
 export async function setupStartAuction(
-  wallet: WalletSigner,
+  publicKey: PublicKey | null,
   vault: StringPublicKey
 ): Promise<ITransactionBuilder> {
-  if (!wallet.publicKey) throw new Error();
+  if (!publicKey) throw new Error();
 
   const signers: Keypair[] = [];
   const instructions: TransactionInstruction[] = [];
 
-  const startAuctionInstr = await startAuction(
-    vault,
-    wallet.publicKey.toBase58()
-  );
+  const startAuctionInstr = await startAuction(vault, publicKey.toBase58());
   instructions.push(startAuctionInstr);
 
   return { instructions, signers };
@@ -208,7 +206,7 @@ async function findValidWhitelistedCreator(
 }
 
 export async function validateBoxes(
-  wallet: WalletSigner,
+  publicKey: PublicKey | null,
   whitelistedCreatorsByCreator: Record<
     string,
     ParsedAccount<WhitelistedCreator>
@@ -217,7 +215,7 @@ export async function validateBoxes(
   safetyDeposit: SafetyDepositInstructionTemplate,
   safetyDepositTokenStore: StringPublicKey
 ): Promise<ITransactionBuilder> {
-  if (!wallet.publicKey) throw new Error();
+  if (!publicKey) throw new Error();
 
   const store = programIds().store?.toBase58();
   if (!store) {
@@ -268,9 +266,9 @@ export async function validateBoxes(
     safetyDeposit.config.winningConfigType === WinningConfigType.PrintingV1
       ? me?.info.printingMint
       : safetyDeposit.draft.metadata.info.mint,
-    wallet.publicKey.toBase58(),
-    wallet.publicKey.toBase58(),
-    wallet.publicKey.toBase58(),
+    publicKey.toBase58(),
+    publicKey.toBase58(),
+    publicKey.toBase58(),
     edition,
     whitelistedCreator,
     store,
@@ -282,14 +280,14 @@ export async function validateBoxes(
 }
 
 export async function makeAuction(
-  wallet: WalletSigner,
+  publicKey: PublicKey | null,
   vault: StringPublicKey,
   auctionSettings: IPartialCreateAuctionArgs
 ): Promise<{
   transaction: ITransactionBuilder;
   auction: StringPublicKey;
 }> {
-  if (!wallet.publicKey) throw new Error();
+  if (!publicKey) throw new Error();
 
   const PROGRAM_IDS = utils.programIds();
 
@@ -308,13 +306,13 @@ export async function makeAuction(
 
   const fullSettings = new CreateAuctionArgs({
     ...auctionSettings,
-    authority: wallet.publicKey.toBase58(),
+    authority: publicKey.toBase58(),
     resource: vault,
   });
 
   const createAuctionInstr = await createAuction(
     fullSettings,
-    wallet.publicKey.toBase58()
+    publicKey.toBase58()
   );
   instructions.push(createAuctionInstr);
 
@@ -323,13 +321,13 @@ export async function makeAuction(
 
 export async function createExternalPriceAccount(
   connection: Connection,
-  wallet: WalletSigner
+  publicKey: PublicKey | null
 ): Promise<{
   transaction: ITransactionBuilder;
   priceMint: StringPublicKey;
   externalPriceAccount: StringPublicKey;
 }> {
-  if (!wallet.publicKey) throw new Error();
+  if (!publicKey) throw new Error();
 
   const PROGRAM_IDS = utils.programIds();
 
@@ -350,7 +348,7 @@ export async function createExternalPriceAccount(
   });
 
   const uninitializedEPA = SystemProgram.createAccount({
-    fromPubkey: wallet.publicKey,
+    fromPubkey: publicKey,
     newAccountPubkey: externalPriceAccount.publicKey,
     lamports: epaRentExempt,
     space: MAX_EXTERNAL_ACCOUNT_SIZE,
@@ -375,7 +373,7 @@ export async function createExternalPriceAccount(
 // return Transaction
 export async function createVault(
   connection: Connection,
-  wallet: WalletSigner, // replace with pubKey
+  publicKey: PublicKey | null,
   priceMint: StringPublicKey,
   externalPriceAccount: StringPublicKey
 ): Promise<{
@@ -385,7 +383,7 @@ export async function createVault(
   redeemTreasury: StringPublicKey;
   fractionTreasury: StringPublicKey;
 }> {
-  if (!wallet.publicKey) throw new Error();
+  if (!publicKey) throw new Error();
 
   const PROGRAM_IDS = utils.programIds();
 
@@ -406,8 +404,7 @@ export async function createVault(
 
   const vault = Keypair.generate();
 
-  const vaultAuthority = // todo same here
-  (
+  const vaultAuthority = ( // todo same here
     await findProgramAddress(
       [
         Buffer.from(VAULT_PREFIX),
@@ -419,7 +416,7 @@ export async function createVault(
   )[0];
 
   const createMintTrans = createMint(
-    wallet.publicKey,
+    publicKey,
     mintRentExempt,
     0,
     toPublicKey(vaultAuthority),
@@ -430,7 +427,7 @@ export async function createVault(
   const fractionalMint = createMintTrans.account.toBase58();
 
   const redeemTreasuryBuilder = createTokenAccount(
-    wallet.publicKey,
+    publicKey,
     accountRentExempt,
     toPublicKey(priceMint),
     toPublicKey(vaultAuthority)
@@ -440,7 +437,7 @@ export async function createVault(
   const redeemTreasury = redeemTreasuryBuilder.account.toBase58();
 
   const fractionTreasuryBuilder = createTokenAccount(
-    wallet.publicKey,
+    publicKey,
     accountRentExempt,
     toPublicKey(fractionalMint),
     toPublicKey(vaultAuthority)
@@ -450,7 +447,7 @@ export async function createVault(
   const fractionTreasury = fractionTreasuryBuilder.account.toBase58();
 
   const uninitializedVault = SystemProgram.createAccount({
-    fromPubkey: wallet.publicKey,
+    fromPubkey: publicKey,
     newAccountPubkey: vault.publicKey,
     lamports: vaultRentExempt,
     space: MAX_VAULT_SIZE,
@@ -465,7 +462,7 @@ export async function createVault(
     redeemTreasury,
     fractionTreasury,
     vault.publicKey.toBase58(),
-    wallet.publicKey.toBase58(),
+    publicKey.toBase58(),
     externalPriceAccount
   );
 
@@ -487,7 +484,7 @@ export async function createVault(
 // authority (that may or may not exist yet.)
 export async function closeVault(
   connection: Connection,
-  wallet: WalletSigner,
+  publicKey: PublicKey | null,
   vault: StringPublicKey,
   fractionMint: StringPublicKey,
   fractionTreasury: StringPublicKey,
@@ -495,7 +492,7 @@ export async function closeVault(
   priceMint: StringPublicKey,
   externalPriceAccount: StringPublicKey
 ): Promise<ITransactionBuilder> {
-  if (!wallet.publicKey) throw new Error();
+  if (!publicKey) throw new Error();
 
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
     AccountLayout.span
@@ -508,7 +505,7 @@ export async function closeVault(
     vault,
     fractionMint,
     fractionTreasury,
-    wallet.publicKey.toBase58()
+    publicKey.toBase58()
   );
   instructions.push(activateVaultInstr);
 
@@ -517,10 +514,10 @@ export async function closeVault(
     instructions: shareAccInst,
     signers: shareAccSigners,
   } = createTokenAccount(
-    wallet.publicKey,
+    publicKey,
     accountRentExempt,
     toPublicKey(fractionMint),
-    wallet.publicKey
+    publicKey
   );
   instructions.push(...shareAccInst);
   signers.push(...shareAccSigners);
@@ -530,10 +527,10 @@ export async function closeVault(
     instructions: createAccInst,
     signers: createAccSigners,
   } = createTokenAccount(
-    wallet.publicKey,
+    publicKey,
     accountRentExempt,
     toPublicKey(priceMint),
-    wallet.publicKey
+    publicKey
   );
   instructions.push(...createAccInst);
   signers.push(...createAccSigners);
@@ -546,7 +543,7 @@ export async function closeVault(
     // instructions,
     // [],
     payingTokenAccount,
-    wallet.publicKey,
+    publicKey,
     0,
     false,
     undefined,
@@ -558,7 +555,7 @@ export async function closeVault(
     // instructions,
     // [],
     outstandingShareAccount,
-    wallet.publicKey,
+    publicKey,
     0,
     false,
     undefined,
@@ -575,8 +572,8 @@ export async function closeVault(
     fractionMint,
     fractionTreasury,
     redeemTreasury,
-    wallet.publicKey.toBase58(),
-    wallet.publicKey.toBase58(),
+    publicKey.toBase58(),
+    publicKey.toBase58(),
     transferAuthority.publicKey.toBase58(),
     externalPriceAccount
   );
@@ -586,19 +583,19 @@ export async function closeVault(
 }
 
 export async function setVaultAndAuctionAuthorities(
-  wallet: WalletSigner,
+  publicKey: PublicKey | null,
   vault: StringPublicKey,
   auction: StringPublicKey,
   auctionManager: StringPublicKey
 ): Promise<ITransactionBuilder> {
-  if (!wallet.publicKey) throw new Error();
+  if (!publicKey) throw new Error();
 
   const signers: Keypair[] = [];
   const instructions: TransactionInstruction[] = [];
 
   const auctionAuthorityInstr = setAuctionAuthority(
     auction,
-    wallet.publicKey.toBase58(),
+    publicKey.toBase58(),
     auctionManager
   );
 
@@ -606,7 +603,7 @@ export async function setVaultAndAuctionAuthorities(
 
   const vaultAuthInstr = setVaultAuthority(
     vault,
-    wallet.publicKey.toBase58(),
+    publicKey.toBase58(),
     auctionManager
   );
   instructions.push(vaultAuthInstr);
@@ -616,14 +613,14 @@ export async function setVaultAndAuctionAuthorities(
 
 export async function addTokensToVault(
   connection: Connection,
-  wallet: WalletSigner,
+  publicKey: PublicKey | null,
   vault: StringPublicKey,
   nft: SafetyDepositInstructionTemplate
 ): Promise<{
   transaction: ITransactionBuilder;
   safetyDepositTokenStore: StringPublicKey;
 }> {
-  if (!wallet.publicKey) throw new Error();
+  if (!publicKey) throw new Error();
 
   const PROGRAM_IDS = utils.programIds();
 
@@ -651,7 +648,7 @@ export async function addTokensToVault(
       instructions: createAccInstr,
       signers: createAccSigners,
     } = createTokenAccount(
-      wallet.publicKey,
+      publicKey,
       accountRentExempt,
       toPublicKey(nft.box.tokenMint),
       toPublicKey(vaultAuthority)
@@ -662,7 +659,7 @@ export async function addTokensToVault(
 
     const { instruction, transferAuthority } = approve(
       toPublicKey(nft.box.tokenAccount),
-      wallet.publicKey,
+      publicKey,
       nft.box.amount.toNumber()
     );
     instructions.push(instruction);
@@ -677,8 +674,8 @@ export async function addTokensToVault(
       nft.box.tokenAccount,
       newStoreAccount.toBase58(),
       vault,
-      wallet.publicKey.toBase58(),
-      wallet.publicKey.toBase58(),
+      publicKey.toBase58(),
+      publicKey.toBase58(),
       transferAuthority.publicKey.toBase58()
     );
     instructions.push(addTokenVaultInstr);

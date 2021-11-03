@@ -11,7 +11,7 @@
  */
 
 import { AccountLayout } from '@solana/spl-token';
-import { Connection } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import {
   IPartialCreateAuctionArgs,
   ITransactionBuilder,
@@ -39,7 +39,7 @@ import {
 // waht we need for the action
 export async function createAuctionManager(
   connection: Connection,
-  wallet: WalletSigner,
+  publicKey: PublicKey | null,
   whitelistedCreatorsByCreator: Record<
     string,
     ParsedAccount<WhitelistedCreator>
@@ -55,16 +55,16 @@ export async function createAuctionManager(
   const transactions: ITransactionBuilder[] = [];
 
   // todo: send as param
-  const safetyDepositConfig = buildSafetyDeposit(wallet, safetyDepositDraft);
+  const safetyDepositConfig = buildSafetyDeposit(publicKey, safetyDepositDraft);
 
   //#1 create external price account
-  const extAccResult = await createExternalPriceAccount(connection, wallet);
+  const extAccResult = await createExternalPriceAccount(connection, publicKey);
   transactions.push(extAccResult.transaction);
 
   //#2 create vault
   const createVaultResult = await createVault(
     connection,
-    wallet,
+    publicKey,
     extAccResult.priceMint,
     extAccResult.externalPriceAccount
   );
@@ -72,7 +72,7 @@ export async function createAuctionManager(
 
   //#3 create auction
   const makeAccResult = await makeAuction(
-    wallet,
+    publicKey,
     createVaultResult.vault,
     auctionSettings
   );
@@ -80,7 +80,7 @@ export async function createAuctionManager(
 
   //#4 setup auction manager
   const autionManagerResult = await setupAuctionManagerInstructions(
-    wallet,
+    publicKey,
     createVaultResult.vault,
     paymentMint,
     accountRentExempt,
@@ -91,7 +91,7 @@ export async function createAuctionManager(
   //#5 add tokens to vault
   const addTokensResult = await addTokensToVault(
     connection,
-    wallet,
+    publicKey,
     createVaultResult.vault,
     safetyDepositConfig
   );
@@ -100,7 +100,7 @@ export async function createAuctionManager(
   //#6 close vault
   const closeVaultTrans = await closeVault(
     connection,
-    wallet,
+    publicKey,
     createVaultResult.vault,
     createVaultResult.fractionalMint,
     createVaultResult.fractionTreasury,
@@ -112,7 +112,7 @@ export async function createAuctionManager(
 
   //#7 set vault and auction authority
   const setVaultAuctTrans = await setVaultAndAuctionAuthorities(
-    wallet,
+    publicKey,
     createVaultResult.vault,
     makeAccResult.auction,
     autionManagerResult.auctionManager
@@ -121,14 +121,14 @@ export async function createAuctionManager(
 
   //#8 start auction
   const startAuctionTrans = await setupStartAuction(
-    wallet,
+    publicKey,
     createVaultResult.vault
   );
   transactions.push(startAuctionTrans);
 
   //#9 validate boxes
   const validateBoxesTrans = await validateBoxes(
-    wallet,
+    publicKey,
     whitelistedCreatorsByCreator,
     createVaultResult.vault,
     safetyDepositConfig,

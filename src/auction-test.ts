@@ -55,10 +55,10 @@ export const triggerAuction = async () => {
   console.log('~~~~~~~START PROCESSING~~~~~~');
   const result = await createAuctionManager(
     connection,
-    walletSinger,
+    walletSinger.publicKey,
     whitelistedCreatorsByCreator, // this is a kind of cache, if missing => getWhitelistedCreator(creator: StringPublicKey) will be called
     auctionSettingsBuidler,
-    [safetyDeposit]
+    safetyDeposit
   );
 
   console.log(result);
@@ -76,10 +76,10 @@ export const triggerAuctionInstantSale = async () => {
   console.log('~~~~~~~START PROCESSING~~~~~~');
   const result = await createAuctionManager(
     connection,
-    walletSinger,
+    walletSinger.publicKey,
     whitelistedCreatorsByCreator,
     auctionSettingsInstantSale,
-    [safetyDeposit]
+    safetyDeposit
   );
 
   console.log(result);
