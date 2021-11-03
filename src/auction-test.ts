@@ -41,7 +41,7 @@ const initSafetyDeposit = async (): Promise<SafetyDepositDraft> => {
 
 export const triggerAuction = async () => {
   const safetyDeposit = await initSafetyDeposit();
-  console.log(safetyDeposit);
+  // console.log(safetyDeposit);
 
   const auctionSettingsBuidler = buildAuctionSettings(SaleType.Auction, 0.01, {
     saleEnds: 1,

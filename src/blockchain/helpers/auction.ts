@@ -1,12 +1,19 @@
-import { AccountInfo } from '@solana/web3.js';
+import { AccountInfo, PublicKey, SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 import { deserializeUnchecked } from 'borsh';
 import moment from 'moment';
 import {
   AccountParser,
   findProgramAddress,
+  MasterEditionV1,
+  ParsedAccount,
+  SafetyDepositConfig,
+  SafetyDepositDraft,
+  SafetyDepositInstructionTemplate,
   StringPublicKey,
   toPublicKey,
+  TupleNumericType,
+  WinningConfigType,
 } from '..';
 export const AUCTION_PREFIX = 'auction';
 export const METADATA = 'metadata';
@@ -512,6 +519,64 @@ export async function getAuctionExtended({
       toPublicKey(auctionProgramId)
     )
   )[0];
+}
+
+export function buildSafetyDeposit(
+  publicKey: PublicKey | null,
+  safetyDeposit: SafetyDepositDraft
+): SafetyDepositInstructionTemplate {
+  if (!publicKey) throw new Error();
+
+  let safetyDepositTemplate: SafetyDepositInstructionTemplate;
+  const maxAmount = [...safetyDeposit.amountRanges.map((a) => a.amount)]
+    .sort()
+    .reverse()[0];
+
+  const maxLength = [...safetyDeposit.amountRanges.map((a) => a.length)]
+    .sort()
+    .reverse()[0];
+  safetyDepositTemplate = {
+    box: {
+      tokenAccount:
+        safetyDeposit.winningConfigType !== WinningConfigType.PrintingV1 // every time FullRightsTransfer
+          ? safetyDeposit.holding
+          : safetyDeposit.printingMintHolding,
+      tokenMint:
+        safetyDeposit.winningConfigType !== WinningConfigType.PrintingV1 // every time FullRightsTransfer
+          ? safetyDeposit.metadata.info.mint
+          : (safetyDeposit.masterEdition as ParsedAccount<MasterEditionV1>)
+              ?.info.printingMint,
+      amount:
+        safetyDeposit.winningConfigType == WinningConfigType.PrintingV2 ||
+        safetyDeposit.winningConfigType == WinningConfigType.FullRightsTransfer
+          ? new BN(1) // every time: 1
+          : new BN(
+              safetyDeposit.amountRanges.reduce(
+                (acc, r) => acc.add(r.amount.mul(r.length)),
+                new BN(0)
+              )
+            ),
+    },
+    config: new SafetyDepositConfig({
+      directArgs: {
+        auctionManager: SystemProgram.programId.toBase58(),
+        order: new BN(0),
+        amountRanges: safetyDeposit.amountRanges,
+        amountType: maxAmount.gte(new BN(254))
+          ? TupleNumericType.U16
+          : TupleNumericType.U8, // every time
+        lengthType: maxLength.gte(new BN(254))
+          ? TupleNumericType.U16
+          : TupleNumericType.U8, // every time
+        winningConfigType: safetyDeposit.winningConfigType,
+        participationConfig: null,
+        participationState: null,
+      },
+    }),
+    draft: safetyDeposit,
+  };
+
+  return safetyDepositTemplate;
 }
 
 export const AUCTION_SCHEMA = new Map<any, any>([

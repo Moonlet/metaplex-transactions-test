@@ -6,29 +6,29 @@
  *
  * - every function from /transactions should return Transaction instead of {TransactionsInstruction[], Signers[]}
 // return transactions !!!!
- * - refactor transaction to build direclty ITransactionBuilder
-   - refactor destructure for instructions too
+ * - refactor transaction to build direclty ITransactionBuilder => DONE
+   - refactor destructure for instructions too => DONE
  */
-
-import { AccountLayout } from '@solana/spl-token';
 import { Connection, PublicKey } from '@solana/web3.js';
 import {
+  buildSafetyDeposit,
+  getExemptionVal,
+  getRentExemptions,
   IPartialCreateAuctionArgs,
   ITransactionBuilder,
   ParsedAccount,
   QUOTE_MINT,
+  RentExemp,
   SafetyDepositDraft,
   StringPublicKey,
-  WalletSigner,
   WhitelistedCreator,
 } from '..';
 import {
   addTokensToVault,
-  buildSafetyDeposit,
   closeVault,
   createExternalPriceAccount,
   createVault,
-  makeAuction,
+  setupAuction,
   setupAuctionManagerInstructions,
   setupStartAuction,
   setVaultAndAuctionAuthorities,
@@ -48,22 +48,32 @@ export async function createAuctionManager(
   safetyDepositDraft: SafetyDepositDraft
 ): Promise<ITransactionBuilder[]> {
   const paymentMint: StringPublicKey = QUOTE_MINT.toBase58();
-  const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
-    AccountLayout.span
-  );
-  //todo: list with all rents to remove the connection
   const transactions: ITransactionBuilder[] = [];
 
-  // todo: send as param
+  const rentExemption = await getRentExemptions(connection);
+
+  // rent exemptions
+  const epaRentExemption = getExemptionVal(
+    rentExemption,
+    RentExemp.MaxExternalAccSize
+  );
+  const accountRentExempt = getExemptionVal(
+    rentExemption,
+    RentExemp.AccountLayout
+  );
+
   const safetyDepositConfig = buildSafetyDeposit(publicKey, safetyDepositDraft);
 
   //#1 create external price account
-  const extAccResult = await createExternalPriceAccount(connection, publicKey);
+  const extAccResult = await createExternalPriceAccount(
+    epaRentExemption,
+    publicKey
+  );
   transactions.push(extAccResult.transaction);
 
   //#2 create vault
   const createVaultResult = await createVault(
-    connection,
+    rentExemption,
     publicKey,
     extAccResult.priceMint,
     extAccResult.externalPriceAccount
@@ -71,12 +81,12 @@ export async function createAuctionManager(
   transactions.push(createVaultResult.transaction);
 
   //#3 create auction
-  const makeAccResult = await makeAuction(
+  const setupAuctionResult = await setupAuction(
     publicKey,
     createVaultResult.vault,
     auctionSettings
   );
-  transactions.push(makeAccResult.transaction);
+  transactions.push(setupAuctionResult.transaction);
 
   //#4 setup auction manager
   const autionManagerResult = await setupAuctionManagerInstructions(
@@ -90,7 +100,7 @@ export async function createAuctionManager(
 
   //#5 add tokens to vault
   const addTokensResult = await addTokensToVault(
-    connection,
+    accountRentExempt,
     publicKey,
     createVaultResult.vault,
     safetyDepositConfig
@@ -99,7 +109,7 @@ export async function createAuctionManager(
 
   //#6 close vault
   const closeVaultTrans = await closeVault(
-    connection,
+    accountRentExempt,
     publicKey,
     createVaultResult.vault,
     createVaultResult.fractionalMint,
@@ -114,7 +124,7 @@ export async function createAuctionManager(
   const setVaultAuctTrans = await setVaultAndAuctionAuthorities(
     publicKey,
     createVaultResult.vault,
-    makeAccResult.auction,
+    setupAuctionResult.auction,
     autionManagerResult.auctionManager
   );
   transactions.push(setVaultAuctTrans);
@@ -137,7 +147,7 @@ export async function createAuctionManager(
   transactions.push(validateBoxesTrans);
 
   console.log('vault: ', createVaultResult.vault);
-  console.log('auction: ', makeAccResult.auction);
+  console.log('auction: ', setupAuctionResult.auction);
   console.log('auctionManager: ', autionManagerResult.auctionManager);
 
   return transactions;

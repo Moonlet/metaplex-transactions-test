@@ -1,58 +1,56 @@
 import {
-  SystemProgram,
   Keypair,
-  TransactionInstruction,
-  Connection,
   PublicKey,
+  SystemProgram,
+  TransactionInstruction,
 } from '@solana/web3.js';
+import BN from 'bn.js';
 import {
-  WalletSigner,
-  SafetyDepositDraft,
-  SafetyDepositInstructionTemplate,
-  WinningConfigType,
-  ParsedAccount,
-  MasterEditionV1,
-  SafetyDepositConfig,
-  TupleNumericType,
-  StringPublicKey,
-  IPartialCreateAuctionArgs,
-  ITransactionBuilder,
-  programIds,
-  getAuctionKeys,
-  createTokenAccount,
-  toPublicKey,
-  initAuctionManagerV2,
-  startAuction,
-  WhitelistedCreator,
-  Creator,
-  getWhitelistedCreator,
-  ITransactionBuilderBatch,
-  getSafetyDepositBox,
-  getEdition,
-  validateSafetyDepositBoxV2,
-  utils,
-  findProgramAddress,
-  AUCTION_PREFIX,
-  CreateAuctionArgs,
-  createAuction,
-  MAX_EXTERNAL_ACCOUNT_SIZE,
-  ExternalPriceAccount,
-  QUOTE_MINT,
-  updateExternalPriceAccount,
   activateVault,
   addTokenToInactiveVault,
   approve,
+  AUCTION_PREFIX,
   combineVault,
+  createAuction,
+  CreateAuctionArgs,
   createMint,
+  createTokenAccount,
+  Creator,
+  ExternalPriceAccount,
+  findProgramAddress,
+  getAuctionKeys,
+  getEdition,
+  getExemptionVal,
+  getSafetyDepositBox,
+  getWhitelistedCreator,
+  initAuctionManagerV2,
   initVault,
+  IPartialCreateAuctionArgs,
+  ITransactionBuilder,
+  MasterEditionV1,
+  MAX_EXTERNAL_ACCOUNT_SIZE,
   MAX_VAULT_SIZE,
   MetadataKey,
+  ParsedAccount,
+  programIds,
+  QUOTE_MINT,
+  RentExemp,
+  SafetyDepositConfig,
+  SafetyDepositDraft,
+  SafetyDepositInstructionTemplate,
   setAuctionAuthority,
   setVaultAuthority,
+  startAuction,
+  StringPublicKey,
+  toPublicKey,
+  TupleNumericType,
+  updateExternalPriceAccount,
+  utils,
+  validateSafetyDepositBoxV2,
   VAULT_PREFIX,
+  WhitelistedCreator,
+  WinningConfigType,
 } from '..';
-import BN from 'bn.js';
-import { AccountLayout, MintLayout } from '@solana/spl-token';
 
 export function buildSafetyDeposit(
   publicKey: PublicKey | null,
@@ -320,7 +318,7 @@ export async function makeAuction(
 }
 
 export async function createExternalPriceAccount(
-  connection: Connection,
+  epaRentExempt: number,
   publicKey: PublicKey | null
 ): Promise<{
   transaction: ITransactionBuilder;
@@ -333,10 +331,6 @@ export async function createExternalPriceAccount(
 
   const signers: Keypair[] = [];
   const instructions: TransactionInstruction[] = [];
-
-  const epaRentExempt = await connection.getMinimumBalanceForRentExemption(
-    MAX_EXTERNAL_ACCOUNT_SIZE
-  );
 
   const externalPriceAccount = Keypair.generate();
   const key = externalPriceAccount.publicKey.toBase58();
@@ -370,9 +364,8 @@ export async function createExternalPriceAccount(
   };
 }
 
-// return Transaction
 export async function createVault(
-  connection: Connection,
+  rentExemption: Map<RentExemp, number>,
   publicKey: PublicKey | null,
   priceMint: StringPublicKey,
   externalPriceAccount: StringPublicKey
@@ -390,16 +383,14 @@ export async function createVault(
   const signers: Keypair[] = [];
   const instructions: TransactionInstruction[] = [];
 
-  const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
-    AccountLayout.span
+  const accountRentExempt = getExemptionVal(
+    rentExemption,
+    RentExemp.AccountLayout
   );
-
-  const mintRentExempt = await connection.getMinimumBalanceForRentExemption(
-    MintLayout.span
-  );
-
-  const vaultRentExempt = await connection.getMinimumBalanceForRentExemption(
-    MAX_VAULT_SIZE
+  const mintRentExempt = getExemptionVal(rentExemption, RentExemp.MintLayout);
+  const vaultRentExempt = getExemptionVal(
+    rentExemption,
+    RentExemp.MaxVaultSize
   );
 
   const vault = Keypair.generate();
@@ -483,7 +474,7 @@ export async function createVault(
 // This command "closes" the vault, by activating & combining it in one go, handing it over to the auction manager
 // authority (that may or may not exist yet.)
 export async function closeVault(
-  connection: Connection,
+  accountRentExempt: number,
   publicKey: PublicKey | null,
   vault: StringPublicKey,
   fractionMint: StringPublicKey,
@@ -494,9 +485,6 @@ export async function closeVault(
 ): Promise<ITransactionBuilder> {
   if (!publicKey) throw new Error();
 
-  const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
-    AccountLayout.span
-  );
   const signers: Keypair[] = [];
   const instructions: TransactionInstruction[] = [];
 
@@ -612,7 +600,7 @@ export async function setVaultAndAuctionAuthorities(
 }
 
 export async function addTokensToVault(
-  connection: Connection,
+  accountRentExempt: number,
   publicKey: PublicKey | null,
   vault: StringPublicKey,
   nft: SafetyDepositInstructionTemplate
@@ -623,10 +611,6 @@ export async function addTokensToVault(
   if (!publicKey) throw new Error();
 
   const PROGRAM_IDS = utils.programIds();
-
-  const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
-    AccountLayout.span
-  );
 
   const vaultAuthority = (
     await findProgramAddress(
