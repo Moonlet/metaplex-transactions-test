@@ -28,7 +28,7 @@ const convertExemptionEnum = (type: RentExemp): any => {
   }
 };
 
-export const getRentExemption = async (
+export const getRentExemptions = async (
   connection: Connection
 ): Promise<Map<RentExemp, number>> => {
   const finalData: Map<RentExemp, number> = new Map();

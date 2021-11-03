@@ -52,64 +52,6 @@ import {
   WinningConfigType,
 } from '..';
 
-export function buildSafetyDeposit(
-  publicKey: PublicKey | null,
-  safetyDeposit: SafetyDepositDraft
-): SafetyDepositInstructionTemplate {
-  if (!publicKey) throw new Error();
-
-  let safetyDepositTemplate: SafetyDepositInstructionTemplate;
-  const maxAmount = [...safetyDeposit.amountRanges.map((a) => a.amount)]
-    .sort()
-    .reverse()[0];
-
-  const maxLength = [...safetyDeposit.amountRanges.map((a) => a.length)]
-    .sort()
-    .reverse()[0];
-  safetyDepositTemplate = {
-    box: {
-      tokenAccount:
-        safetyDeposit.winningConfigType !== WinningConfigType.PrintingV1 // every time FullRightsTransfer
-          ? safetyDeposit.holding
-          : safetyDeposit.printingMintHolding,
-      tokenMint:
-        safetyDeposit.winningConfigType !== WinningConfigType.PrintingV1 // every time FullRightsTransfer
-          ? safetyDeposit.metadata.info.mint
-          : (safetyDeposit.masterEdition as ParsedAccount<MasterEditionV1>)
-              ?.info.printingMint,
-      amount:
-        safetyDeposit.winningConfigType == WinningConfigType.PrintingV2 ||
-        safetyDeposit.winningConfigType == WinningConfigType.FullRightsTransfer
-          ? new BN(1) // every time: 1
-          : new BN(
-              safetyDeposit.amountRanges.reduce(
-                (acc, r) => acc.add(r.amount.mul(r.length)),
-                new BN(0)
-              )
-            ),
-    },
-    config: new SafetyDepositConfig({
-      directArgs: {
-        auctionManager: SystemProgram.programId.toBase58(),
-        order: new BN(0),
-        amountRanges: safetyDeposit.amountRanges,
-        amountType: maxAmount.gte(new BN(254))
-          ? TupleNumericType.U16
-          : TupleNumericType.U8, // every time
-        lengthType: maxLength.gte(new BN(254))
-          ? TupleNumericType.U16
-          : TupleNumericType.U8, // every time
-        winningConfigType: safetyDeposit.winningConfigType,
-        participationConfig: null,
-        participationState: null,
-      },
-    }),
-    draft: safetyDeposit,
-  };
-
-  return safetyDepositTemplate;
-}
-
 export async function setupAuctionManagerInstructions(
   publicKey: PublicKey | null,
   vault: StringPublicKey,
@@ -277,7 +219,7 @@ export async function validateBoxes(
   return { instructions, signers };
 }
 
-export async function makeAuction(
+export async function setupAuction(
   publicKey: PublicKey | null,
   vault: StringPublicKey,
   auctionSettings: IPartialCreateAuctionArgs
@@ -395,7 +337,8 @@ export async function createVault(
 
   const vault = Keypair.generate();
 
-  const vaultAuthority = ( // todo same here
+  const vaultAuthority = // todo same here
+  (
     await findProgramAddress(
       [
         Buffer.from(VAULT_PREFIX),
