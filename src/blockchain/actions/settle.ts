@@ -1,3 +1,4 @@
+import { AccountLayout } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
 import {
   AuctionState,
@@ -14,7 +15,7 @@ import {
   toPublicKey,
   WalletSigner,
 } from '..';
-import { setupPlaceBid } from './sendPlaceBid';
+import { setupPlaceBid } from '../transactions/bid';
 
 const BATCH_SIZE = 10;
 const SETTLE_TRANSACTION_SIZE = 6;
@@ -34,10 +35,18 @@ export async function settle(
     auctionView.auction.data.info.ended() &&
     auctionView.auction.data.info.state !== AuctionState.Ended
   ) {
-    const { instructions: placeBidInstr, signers: placeBidSigners } =
-      await setupPlaceBid(connection, wallet, payingAccount, auctionView, 0);
-    instructions.push(placeBidInstr);
-    signers.push(placeBidSigners);
+    const rentExempt = await connection.getMinimumBalanceForRentExemption(
+      AccountLayout.span
+    );
+    const setupBidRes = await setupPlaceBid(
+      rentExempt,
+      wallet.publicKey,
+      payingAccount,
+      auctionView,
+      0
+    );
+    instructions.push(setupBidRes.transaction.instructions);
+    signers.push(setupBidRes.transaction.signers);
 
     // await sendTransactionWithRetry(
     //   connection,

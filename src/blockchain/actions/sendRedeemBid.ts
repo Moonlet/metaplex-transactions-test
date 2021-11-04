@@ -5,7 +5,6 @@ import {
   AuctionState,
   AuctionViewItem,
   claimBid,
-  createTokenAccount,
   getMetadata,
   ParsedAccount,
   PartialAuctionView,
@@ -18,13 +17,13 @@ import {
   WinningConfigType,
 } from '..';
 import safetyDepositAccount from '../../mock/cache/safetyDepositAccount';
+import { setupCancelBid, setupPlaceBid } from '../transactions/bid';
+import { createTokenAccount } from '../transactions/common';
 import {
   ITransactionBuilder,
   ITransactionBuilderBatch,
 } from './../models/types';
-import { setupCancelBid } from './cancelBid';
 import { claimUnusedPrizes } from './claimUnusedPrizes';
-import { setupPlaceBid } from './sendPlaceBid';
 
 // this one is called by the winner
 export async function sendRedeemBid(
@@ -47,10 +46,18 @@ export async function sendRedeemBid(
     auctionView.auction.data.info.state !== AuctionState.Ended
   ) {
     // but whyyy???? (same for settle function)
-    const { instructions: placeBidInstr, signers: placeBidSigners } =
-      await setupPlaceBid(connection, wallet, payingAccount, auctionView, 0);
-    instructions.push(placeBidInstr);
-    signers.push(placeBidSigners);
+    const rentExempt = await connection.getMinimumBalanceForRentExemption(
+      AccountLayout.span
+    );
+    const setupBidRes = await setupPlaceBid(
+      rentExempt,
+      wallet.publicKey,
+      payingAccount,
+      auctionView,
+      0
+    );
+    instructions.push(setupBidRes.transaction.instructions);
+    signers.push(setupBidRes.transaction.signers);
   }
 
   const accountRentExempt = await connection.getMinimumBalanceForRentExemption(
@@ -119,7 +126,7 @@ export async function sendRedeemBid(
   } else {
     // If you didnt win, you must have a bid we can refund before we check for open editions.
     const { signers: cancelSigners, instructions: cancelInstr } =
-      await setupCancelBid(auctionView, accountRentExempt, wallet);
+      await setupCancelBid(auctionView, accountRentExempt, wallet.publicKey);
     signers.push(cancelSigners);
     instructions.push(cancelInstr);
   }
@@ -178,19 +185,15 @@ async function setupRedeemFullRightsTransferInstructions(
     let newTokenAccount = safetyDepositAccount.pubkey;
 
     if (!newTokenAccount) {
-      const {
-        account: tokenAcc,
-        instructions: builderInstr,
-        signers: builderSigners,
-      } = createTokenAccount(
+      const createTokenAcc = createTokenAccount(
         wallet.publicKey,
         accountRentExempt,
         toPublicKey(safetyDeposit.info.tokenMint),
         wallet.publicKey
       );
-      winningPrizeInstructions.push(...builderInstr);
-      winningPrizeSigner.push(...builderSigners);
-      newTokenAccount = tokenAcc.toBase58();
+      winningPrizeInstructions.push(...createTokenAcc.transaction.instructions);
+      winningPrizeSigner.push(...createTokenAcc.transaction.signers);
+      newTokenAccount = createTokenAcc.account.toBase58();
     }
 
     const redeemFullInstr = await redeemFullRightsTransferBid(

@@ -3,7 +3,6 @@ import { AccountLayout } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
 import {
   AuctionViewItem,
-  createTokenAccount,
   ParsedAccount,
   PartialAuctionView,
   redeemFullRightsTransferBid,
@@ -13,6 +12,7 @@ import {
   WinningConfigType,
 } from '..';
 import safetyDepositAccount from '../../mock/cache/safetyDepositAccount';
+import { createTokenAccount } from '../transactions/common';
 import {
   ITransactionBuilder,
   ITransactionBuilderBatch,
@@ -120,8 +120,10 @@ async function setupRedeemFullRightsTransferInstructions(
         wallet.publicKey
       );
 
-      winningPrizeInstructions.push(...createTokenBuilder.instructions);
-      winningPrizeSigner.push(...createTokenBuilder.signers);
+      winningPrizeInstructions.push(
+        ...createTokenBuilder.transaction.instructions
+      );
+      winningPrizeSigner.push(...createTokenBuilder.transaction.signers);
       newTokenAccount = createTokenBuilder.account.toBase58();
     }
 

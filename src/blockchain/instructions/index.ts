@@ -1,2 +1,5 @@
 export * from './metaplex';
-export * from './main';
+export * from './account';
+export * from './auction';
+export * from './metadata';
+export * from './vault';
