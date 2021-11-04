@@ -27,17 +27,19 @@ export const buildAuctionSettings = (
     }),
     tokenMint: QUOTE_MINT.toBase58(),
     endAuctionAt: isAuction
-      ? new BN((auctionData?.saleEnds || 0) * 60 * 60 * 24) // seconds
+      ? new BN(auctionData?.saleEnds || 0).mul(new BN(60 * 60 * 24)) // seconds
       : null,
     auctionGap: isAuction ? new BN(1 * 60) : null, // seconds,
     gapTickSizePercentage: isAuction ? 5 : null, // todo: see this default value
     tickSize: isAuction
-      ? new BN((auctionData?.tickSize || 0) * LAMPORTS_PER_SOL)
+      ? new BN(auctionData?.tickSize || 0).mul(new BN(LAMPORTS_PER_SOL))
       : null,
-    instantSalePrice: isAuction ? null : new BN(amount * LAMPORTS_PER_SOL), // refactor
+    instantSalePrice: isAuction
+      ? null
+      : new BN(amount).mul(new BN(LAMPORTS_PER_SOL)), // refactor
     priceFloor: new PriceFloor({
       type: PriceFloorType.Minimum,
-      minPrice: new BN(amount * LAMPORTS_PER_SOL), // auction price
+      minPrice: new BN(amount).mul(new BN(LAMPORTS_PER_SOL)), // auction price
     }),
   };
 };
