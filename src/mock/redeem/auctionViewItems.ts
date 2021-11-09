@@ -78,6 +78,7 @@ export default {
   ...defaultAuctionView,
   items: [[auctionItem]],
   myBidderMetadata: {
+    // only used auctionView.myBidderMetadata.data.info.bidderPubkey => replace with myBidderPot.data.info.bidderAct
     pubkey: 'F29RzJDZ816eyU4BL6GkVeFmELa9chcgMJM3wynwstRg',
     data: {
       type: 'myBidderMetadata',

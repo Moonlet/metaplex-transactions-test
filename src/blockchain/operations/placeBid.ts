@@ -1,36 +1,28 @@
-import { PublicKey } from '@solana/web3.js';
-import BN from 'bn.js';
-import {
-  getExemptionVal,
-  ITransactionBuilder,
-  PartialAuctionView,
-  RentExemp,
-} from '..';
-import { setupPlaceBid } from '../transactions/bid';
+import { PublicKey } from '@solana/web3.js'
+import BN from 'bn.js'
+import { ITransactionBuilder, PlaceBidDto, TokenAccount } from '..'
+import { setupPlaceBid } from '../transactions/bid'
 
 export async function sendPlaceBid(
   publicKey: PublicKey | null,
-  rentExemption: Map<RentExemp, number>,
-  bidderTokenAccount: string | undefined,
-  auctionView: PartialAuctionView,
+  myPayingAccount: TokenAccount | undefined,
+  accountRentExempt: number,
+  auctionView: PlaceBidDto,
   // value entered by the user adjust to decimals of the mint
   amount: number | BN
 ): Promise<ITransactionBuilder[]> {
-  const transactions: ITransactionBuilder[] = [];
-
-  const accountRentExempt = getExemptionVal(
-    rentExemption,
-    RentExemp.AccountLayout
-  );
+  const transactions: ITransactionBuilder[] = []
 
   const placeBidResult = await setupPlaceBid(
-    accountRentExempt,
     publicKey,
-    bidderTokenAccount,
+    myPayingAccount,
+    accountRentExempt,
     auctionView,
     amount
-  );
-  transactions.push(placeBidResult.transaction);
+  )
+  transactions.push(placeBidResult.transaction)
 
-  return transactions;
+  // TODO: add transaction send fee to tiexo account
+
+  return transactions
 }

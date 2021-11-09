@@ -1,3 +1,4 @@
+import { TokenAccount } from '..';
 // import { WalletAdapter } from '@solana/wallet-adapter-base';
 import {
   AccountInfo,
@@ -58,8 +59,32 @@ export type PartialAuctionView = {
   myBidderPot?: ParsedAccountV2<BidderPot>; // current bid for the user for the auction
   // todo: I think need auctionDataExtended also
   items: AuctionViewItem[][]; // must add (I think we will have onle one item everytime)
-  myBidderMetadata?: ParsedAccountV2<BidderMetadata>;
+  myBidderMetadata?: ParsedAccountV2<BidderMetadata>; // todo: remove this
 };
+
+export interface PlaceBidDto {
+  vault: StringPublicKey;
+  auction: ParsedAccountV2<AuctionData>;
+  myBidderPot?: StringPublicKey;
+}
+
+export const convertPlaceBidDto = (
+  auctionView: PartialAuctionView
+): PlaceBidDto => {
+  return {
+    vault: auctionView.vault.pubkey,
+    myBidderPot: auctionView.myBidderPot?.data.info.bidderPot,
+    auction: auctionView.auction,
+  };
+};
+
+/**
+ * - auctionView.auctionManager.data.info.vault => replace with auctionView.vault.pubkey
+- auctionView.myBidderPot
+- auctionView.myBidderPot.data.info.bidderPot
+- auctionView.auction.data.info.tokenMint
+- auctionView.vault.pubkey
+ */
 
 //todo: see thins
 // export type WalletSigner = Pick<

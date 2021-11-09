@@ -4,6 +4,7 @@ import {
   AuctionState,
   BidderPot,
   claimBid,
+  convertPlaceBidDto,
   createAssociatedTokenAccountInstruction,
   emptyPaymentAccount,
   findProgramAddress,
@@ -39,10 +40,10 @@ export async function settle(
       AccountLayout.span
     );
     const setupBidRes = await setupPlaceBid(
-      rentExempt,
       wallet.publicKey,
-      payingAccount,
-      auctionView,
+      undefined, /*payingAccount,*/
+      rentExempt,
+      convertPlaceBidDto(auctionView),
       0
     );
     instructions.push(setupBidRes.transaction.instructions);

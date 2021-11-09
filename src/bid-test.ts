@@ -1,35 +1,54 @@
-import { getRentExemptions } from './blockchain';
-import { sendPlaceBid } from './blockchain/operations/placeBid';
-import { connection, walletSinger } from './common-setup';
-import auctionView from './mock/bid/auctionView';
-const bidderAccount = '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan';
-const amount = 0.011;
+import { sendPlaceBid } from './blockchain/operations/placeBid'
+import placeBidMock from './mock/bid/placeBidDto'
+import { connection, walletSinger } from './common-setup'
+import { getRentExemptions, getExemptionVal, RentExemp, TokenAccount } from './blockchain'
+// const bidderAccount = '9AVaowib8ePah1VdJft6mgZtYQcHgLA4y1TAEV22Jhan'
+const amount = 0.011
 
 export const placeBid = async () => {
-  const { myBidderPot, ...auctionViewNoBidder } = auctionView;
+  const placeBidMockNoBidder = { ...placeBidMock }
+  placeBidMockNoBidder.myBidderPot = undefined
 
-  const rentExemption = await getRentExemptions(connection);
+  const rentExemption = await getRentExemptions(connection)
+  const accountRentExempt = getExemptionVal(rentExemption, RentExemp.AccountLayout)
+
+  /* used in `ensureWrappedAccount` functions, 
+        if  (myPayingAccount && !myPayingAccount.info.isNative) {
+            return myPayingAccount.pubKey 
+        }
+     but I think every time `myPayingAccount.info.isNative` == true
+    */
+  const myPayingAccount: TokenAccount | undefined = /*await getTokenAccount(connection, wallet.publicKey)*/ undefined
 
   const result = await sendPlaceBid(
     walletSinger.publicKey,
-    rentExemption,
-    bidderAccount,
-    auctionViewNoBidder,
+    myPayingAccount,
+    accountRentExempt,
+    placeBidMockNoBidder,
     amount
-  );
-  console.log(result);
-};
+  )
+  console.log(result)
+}
 
 export const placeBidWithCancelPrevious = async () => {
-  const rentExemption = await getRentExemptions(connection);
+  const rentExemption = await getRentExemptions(connection)
+  const accountRentExempt = getExemptionVal(rentExemption, RentExemp.AccountLayout)
+
+  /* used in `ensureWrappedAccount` functions, 
+      if  (myPayingAccount && !myPayingAccount.info.isNative) {
+          return myPayingAccount.pubKey 
+      }
+   but I think every time `myPayingAccount.info.isNative` == true
+  */
+  const myPayingAccount: TokenAccount | undefined = /*await getTokenAccount(connection, wallet.publicKey)*/ undefined
 
   const result = await sendPlaceBid(
     walletSinger.publicKey,
-    rentExemption,
-    bidderAccount,
-    auctionView,
+    myPayingAccount,
+    accountRentExempt,
+    placeBidMock,
     amount
-  );
-  console.log(result);
-};
-placeBid();
+  )
+  console.log(result)
+}
+placeBid()

@@ -165,7 +165,7 @@ export function chunks<T>(array: T[], size: number): T[][] {
 
 export function toLamports(
   account?: TokenAccount | number,
-  mint?: MintInfo
+  mint?: Partial<MintInfo>
 ): number {
   if (!account) {
     return 0;
@@ -195,8 +195,8 @@ export function fromLamports(
     typeof account === 'number'
       ? account
       : BN.isBN(account)
-      ? account.toNumber()
-      : account.info.amount.toNumber()
+        ? account.toNumber()
+        : account.info.amount.toNumber()
   );
 
   const precision = Math.pow(10, mint?.decimals || 9);

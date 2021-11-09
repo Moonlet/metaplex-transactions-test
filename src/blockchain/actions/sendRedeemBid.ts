@@ -1,3 +1,4 @@
+import { convertPlaceBidDto } from './../models/types';
 // import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 import { AccountLayout } from '@solana/spl-token';
 import { Connection, Keypair, TransactionInstruction } from '@solana/web3.js';
@@ -50,10 +51,10 @@ export async function sendRedeemBid(
       AccountLayout.span
     );
     const setupBidRes = await setupPlaceBid(
-      rentExempt,
       wallet.publicKey,
-      payingAccount,
-      auctionView,
+      undefined, /*payingAccount,*/
+      rentExempt,
+      convertPlaceBidDto(auctionView),
       0
     );
     instructions.push(setupBidRes.transaction.instructions);
@@ -126,7 +127,7 @@ export async function sendRedeemBid(
   } else {
     // If you didnt win, you must have a bid we can refund before we check for open editions.
     const { signers: cancelSigners, instructions: cancelInstr } =
-      await setupCancelBid(auctionView, accountRentExempt, wallet.publicKey);
+      await setupCancelBid(wallet.publicKey, undefined, convertPlaceBidDto(auctionView), accountRentExempt);
     signers.push(cancelSigners);
     instructions.push(cancelInstr);
   }
